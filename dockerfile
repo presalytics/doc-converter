@@ -1,9 +1,24 @@
-FROM python:3-stretch
+FROM libreoffice_python
 
-RUN apt-get remove -y --purge libreoffice* libexttextcat-data* && sudo apt-get -y autoremove
+ENV DocConverterPort ${DocConverterPort}
+ENV DocConverterServer ${DocConverterServer}
 
-# Install wget
-RUN apt-get update -y && \
-    apt-get install -y wget
+ADD requirements.txt .
+RUN pip3 install -r requirements.txt
 
-# Install LibreOffice 
+COPY . /srv/doc_converter
+WORKDIR /srv/doc_converter
+
+# RUN export DocConverterPort \
+#     && export DocConverterServer \
+#     && chmod +x update-nginx.sh \
+#     && ./update-nginx.sh
+
+RUN rm /etc/nginx/sites-enabled/default
+COPY nginx.conf /etc/nginx/sites-available
+RUN chmod +x start.sh
+
+
+EXPOSE ${DocConverterPort}
+
+CMD [ "./start.sh" ]
