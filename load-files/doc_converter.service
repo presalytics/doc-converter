@@ -1,0 +1,12 @@
+[Unit]
+Description=uWsgi instance serving doc_converter
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/srv/doc_converter
+ExecStart=uwsgi --ini uwsig.ini
+
+[Install]
+WantedBy=multi-user.target
