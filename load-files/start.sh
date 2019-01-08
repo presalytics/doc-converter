@@ -6,5 +6,7 @@ echo "Start nginx server"
 service nginx restart
 
 echo "launching uwsgi"
-uwsgi --ini uwsgi.ini
+uwsgi --init uwsgi.ini
+
+echo "build complete"
 
