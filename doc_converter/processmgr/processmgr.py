@@ -65,6 +65,8 @@ class processmgr:
         command = "soffice --headless --invisible --convert-to:{}".format(
             self.convert_type.value,
             self.
+            teste get_file_extension
+            
         
         )
         exit_code = subprocess.call(command)
