@@ -14,14 +14,26 @@ def allowed_file(filename):
 
 class processmgr:
 
-    def __init__(self, in_filepath, convert_type, out_filepath=None):
+    @staticmethod
+    def get_file_extension(filepath):
+        return filepath.rsplit('.', 1)[1].lower()
+    
+    @staticmethod 
+    def get_filename(filepath):
+        return os.path.basename(filepath).rsplit('.', 1)[0]
+
+    def __init__(self, in_filepath, convert_type, out_dir=None):
         self.in_filepath = in_filepath
         self.convert_type = convert_type
-        self.file_extension = get_file_extension(in_filepath)
-        if out_filepath is None:
-            self.out_filepath = os.path.dirname(in_filepath)
+        self.file_extension = processmgr.get_file_extension(in_filepath)
+        if out_dir is None:
+            self.out_dir = os.path.dirname(in_filepath)
         else:
-            self.out_filepath = out_filepath
+            self.out_dir = out_dir
+        self.build_filter()
+        self.converted = False
+        
+
 
     class convert_types(Enum):
         SVG = "svg"
@@ -41,17 +53,30 @@ class processmgr:
         "odt" : ["visio", "draw"]
     }
 
-    @staticmethod
-    def get_file_extension(filepath):
-        return filepath.rsplit('.', 1)
 
     def build_filter(self):
+        program = processmgr.extension_map[self.convert_type][1]
+        export = "{}_{}_Export".format(program, self.convert_type.value)
+        self.filter = export
         
 
 
     def convert(self):
-        command = "soffice --headless --invisible --convert-to:{}".format(self.convert_type.value, )
-    
+        command = "soffice --headless --invisible --convert-to:{}".format(
+            self.convert_type.value,
+            self.
+        
+        )
+        exit_code = subprocess.call(command)
+        if exit_code == 0:
+            self.outfile = os.path.join(self.out_dir, processmgr.get_filename(self.in_filepath) + '.' + self.convert_type.value)
+            if os.path.exists(self.outfile):
+                self.converted = True
+                return self.outfile
+            else:
+                raise Exception("Conversion of {} to {} failed.  Check file format.".format(self.in_filepath, self.convert_type.name))
+        else:
+            raise Exception("Conversion process exited with code {}.  Likely File Error.  check for corrupeted input file.".format(exit_code))
 
 
 
