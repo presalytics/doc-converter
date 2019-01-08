@@ -14,6 +14,7 @@ def allowed_file(filename):
 
 class processmgr:
 
+<<<<<<< HEAD
     @staticmethod
     def get_file_extension(filepath):
         return filepath.rsplit('.', 1)[1].lower()
@@ -34,6 +35,16 @@ class processmgr:
         self.converted = False
         
 
+=======
+    def __init__(self, in_filepath, convert_type, out_filepath=None)
+        self.in_filepath = in_filepath
+        self.convert_type = convert_type
+        self.file_extension = get_file_extension(in_filepath)
+        if out_filepath is None:
+            self.out_filepath = os.path.dirname(in_filepath)
+        else:
+            self.out_filepath = out_filepath
+>>>>>>> fab8f2e60c26beea7e4ea76e42c2377d72c1ccb3
 
     class convert_types(Enum):
         SVG = "svg"
@@ -53,15 +64,24 @@ class processmgr:
         "odt" : ["visio", "draw"]
     }
 
+<<<<<<< HEAD
 
     def build_filter(self):
         program = processmgr.extension_map[self.convert_type][1]
         export = "{}_{}_Export".format(program, self.convert_type.value)
         self.filter = export
+=======
+    @staticmethod
+    def get_file_extension(filepath):
+        return filepath.split('.').last()
+
+    def build_filter(self):
+>>>>>>> fab8f2e60c26beea7e4ea76e42c2377d72c1ccb3
         
 
 
     def convert(self):
+<<<<<<< HEAD
         command = "soffice --headless --invisible --convert-to:{}".format(
             self.convert_type.value,
             self.
@@ -79,6 +99,10 @@ class processmgr:
                 raise Exception("Conversion of {} to {} failed.  Check file format.".format(self.in_filepath, self.convert_type.name))
         else:
             raise Exception("Conversion process exited with code {}.  Likely File Error.  check for corrupeted input file.".format(exit_code))
+=======
+        command = "soffice --headless --invisible --convert-to:{}".format(self.convert_type.value, )
+    
+>>>>>>> fab8f2e60c26beea7e4ea76e42c2377d72c1ccb3
 
 
 
