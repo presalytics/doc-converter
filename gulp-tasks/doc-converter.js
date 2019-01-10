@@ -16,25 +16,29 @@ function execute(command, callback){
     return cp.exec(command, function(error, stdout, stderr){ callback(stdout); });
 };
 
-gulp.task('container-launch-doc-converter', (done) => {
-    console.log("Working Directory:" + workingDirectory)
-    const buildSubprocess = cp.spawnSync(scriptfile, {
-        cwd:workingDirectory,
-        stdio: [0, 1, 2], 
-        env: process.env
-    });
-    done();
-});
-
 
 gulp.task('doc-converter-clean-working-files', (done) => {
     try {
-        gulp.src(['./doc_converter/app/upload/*.*', './doc_converter/app/download/*.*'], {allowEmpty: true})
+        gulp.src(['./doc_converter/app/upload/*.*', './doc_converter/app/download/*.*', './doc_converter/app/log/*.*'], {allowEmpty: true})
             .pipe(vinylpaths(del));
     }  
     catch (e) {}
     done();
 });
+
+gulp.task('container-launch-doc-converter', gulp.series(
+    'doc-converter-clean-working-files',
+    (done) => {
+        console.log("Working Directory:" + workingDirectory)
+        const buildSubprocess = cp.spawnSync(scriptfile, {
+            cwd:workingDirectory,
+            stdio: [0, 1, 2], 
+            env: process.env
+    });
+    done();
+}));
+
+
 
 gulp.task('doc-converter-send-post', (done) => {
     var sendfile = ProjectRoot + "/test/doc_converter_test/test-files/processmgr-pptx-svg.pptx";

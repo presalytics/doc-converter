@@ -95,12 +95,13 @@ class processmgr:
                 self.converted = True
                 return self.outfile
             else:
-                raise IOError([
-                    "Conversion of {} to {} failed.  Check file format.".format(self.in_filepath, self.convert_type),
-                    "exit code: {}".format(rc),
-                    "stdout: {}".format(str(output, 'utf-8')),
-                    "stderr: {}".format(str(err, 'utf-8')) #last line of thrown exception
-                ])
+                raise IOError("Document conversion failed")
+                # raise IOError([
+                #     "Conversion of {} to {} failed.  Check file format.".format(self.in_filepath, self.convert_type),
+                #     "exit code: {}".format(rc),
+                #     "stdout: {}".format(str(output, 'utf-8')),
+                #     "stderr: {}".format(str(err, 'utf-8')) #last line of thrown exception
+                # ])
         else:
             raise IOError([
                     "Conversion process exited with code {}.  Likely File Error.  Check for corrupted input file.".format(exit_code),

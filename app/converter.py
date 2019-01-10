@@ -46,29 +46,33 @@ def server_error():
 @app.route('/svgconvert', methods=['GET', 'POST'])
 def svgconvert():
     """ Converts the uploaded file to an svg file. """
-    if request.method == 'POST':
-        if 'file' not in request.files:
-            return redirect(url_for('bad_request'))
-        file = request.files['file']
-        if file.filename == '':
-            return redirect(url_for('invalid_file'))
-        if file and processmgr.allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            try:
-                os.remove(filepath)
-            except:
-                pass
-            file.save(filepath)
-            try:
-                convert_obj = processmgr(filepath, convert_types.SVG, app.config['DOWNLOAD_FOLDER']) # 
-                outpath = convert_obj.convert()
-                return send_file(outpath, mimetype="image/svg+xml")
-            except IOError as err:
-                logger.exception(err)
-                return redirect(url_for('server_error'))
+    try: 
+        if request.method == 'POST':
+            if 'file' not in request.files:
+                return redirect(url_for('bad_request'))
+            file = request.files['file']
+            if file.filename == '':
+                return redirect(url_for('invalid_file'))
+            if file and processmgr.allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                try:
+                    os.remove(filepath)
+                except:
+                    pass
+                file.save(filepath)
+                try:
+                    convert_obj = processmgr(filepath, convert_types.SVG, app.config['DOWNLOAD_FOLDER']) # 
+                    outpath = convert_obj.convert()
+                    return send_file(outpath, mimetype="image/svg+xml")
+                except IOError as err:
+                    logger.exception(err)
+                    return redirect(url_for('server_error'))
 
-    elif request.method == 'GET':
+        elif request.method == 'GET':
+            return redirect(url_for('bad_request'))
+    except Exception as err:
+        logger.exception(err)
         return redirect(url_for('bad_request'))
 
 
