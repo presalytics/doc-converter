@@ -1,3 +1,6 @@
 #!/usr/bin/env python3
+import os
+from app.converter import app as application
 
-from doc_converter.doc_converter import doc_converter as application
+if __name__ == '__main__':
+    application.run(host=os.environ.get('DocConverterServer'), port=os.environ.get('DocConverterPort'))

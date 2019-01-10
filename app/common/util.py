@@ -2,6 +2,10 @@
 import logging
 import sys
 import os
+from environs import Env
+
+env = Env()
+env.read_env()
 
 file_path = os.path.join(os.path.dirname(__file__), '../log/doc_converter.log')
 logger = logging.getLogger()
