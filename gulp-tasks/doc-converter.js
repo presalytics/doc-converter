@@ -10,7 +10,11 @@ const scriptfile = path.join(workingDirectory, "reload.sh")
 const ProjectRoot = process.env.ProjectRoot
 const DocConverterServer = process.env.DocConverterServer
 const DocConverterPort = process.env.DocConverterPort
+const DocConverterReloadScript = path.join(__dirname, '..', 'load-files', 'reload.sh')
 
+function execute(command, callback){
+    return cp.exec(command, function(error, stdout, stderr){ callback(stdout); });
+};
 
 gulp.task('container-launch-doc-converter', (done) => {
     console.log("Working Directory:" + workingDirectory)
@@ -23,10 +27,6 @@ gulp.task('container-launch-doc-converter', (done) => {
 });
 
 
-
-function execute(command, callback){
-    return cp.exec(command, function(error, stdout, stderr){ callback(stdout); });
-};
 gulp.task('doc-converter-clean-working-files', (done) => {
     try {
         gulp.src(['./doc_converter/app/upload/*.*', './doc_converter/app/download/*.*'], {allowEmpty: true})

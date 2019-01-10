@@ -102,6 +102,9 @@ class processmgr:
                     "stderr: {}".format(str(err, 'utf-8')) #last line of thrown exception
                 ])
         else:
-            mainmessage = "Conversion process exited with code {}.  Likely File Error.  check for corrupeted input file.".format(exit_code)
-            message = "{}\nexit code:{}\nstdout:{}\nstderr:{}".format(mainmessage, rc, output, err)
-            raise IOError(message)
+            raise IOError([
+                    "Conversion process exited with code {}.  Likely File Error.  Check for corrupted input file.".format(exit_code),
+                    "exit code: {}".format(rc),
+                    "stdout: {}".format(str(output, 'utf-8')),
+                    "stderr: {}".format(str(err, 'utf-8')) #last line of thrown exception
+                ])
