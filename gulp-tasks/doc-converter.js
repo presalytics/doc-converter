@@ -6,11 +6,13 @@ let del = require('del')
 let vinylpaths = require('vinyl-paths')
 
 const workingDirectory = path.join(__dirname, '..', 'load-files');
-const scriptfile = path.join(workingDirectory, "reload.sh")
-const ProjectRoot = process.env.ProjectRoot
-const DocConverterServer = process.env.DocConverterServer
-const DocConverterPort = process.env.DocConverterPort
-const DocConverterReloadScript = path.join(__dirname, '..', 'load-files', 'reload.sh')
+const scriptfile = path.join(workingDirectory, "reload.sh");
+const ProjectRoot = process.env.ProjectRoot;
+const DocConverterServer = process.env.DocConverterServer;
+const DocConverterPort = process.env.DocConverterPort;
+const DocConverterReloadScript = path.join(__dirname, '..', 'load-files', 'reload.sh');
+const DocConverterDocsDirectory = path.join(__dirname,'..', 'docs');
+const DocConvreterDocBuilderScript = path.join(DocConverterDocsDirectory, 'docbuilder.sh');
 
 function execute(command, callback){
     return cp.exec(command, function(error, stdout, stderr){ callback(stdout); });
@@ -82,3 +84,11 @@ gulp.task('container-stop-doc-converter', () => {
 });
 
 gulp.task('test-container-build-doc-converter', gulp.series(['container-launch-doc-converter', 'sleep-2','container-test-doc-converter','container-stop-doc-converter']))
+
+gulp.task('doc-converter-build-docs', () => {
+    return cp.spawnSync(DocConvreterDocBuilderScript, {
+        cwd:DocConverterDocsDirectory,
+        stdio: [0, 1, 2], 
+        env: process.env
+    });
+}); 
