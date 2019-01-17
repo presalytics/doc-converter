@@ -28,7 +28,7 @@ gulp.task('doc-converter-clean-working-files', (done) => {
     done();
 });
 
-gulp.task('container-launch-doc-converter', gulp.series(
+gulp.task('doc-converter-container-launch', gulp.series(
     'doc-converter-clean-working-files',
     (done) => {
         console.log("Working Directory:" + workingDirectory)
@@ -39,6 +39,9 @@ gulp.task('container-launch-doc-converter', gulp.series(
     });
     done();
 }));
+
+// for testing file conversion:
+//curl -F file=@$ProjectRoot/test/doc_converter_test/test-files/processmgr-pptx-svg.pptx http://localhost:5002/svgconvert
 
 
 
@@ -83,7 +86,7 @@ gulp.task('container-stop-doc-converter', () => {
     return cp.exec("docker container stop doc_converter");
 });
 
-gulp.task('test-container-build-doc-converter', gulp.series(['container-launch-doc-converter', 'sleep-2','container-test-doc-converter','container-stop-doc-converter']))
+gulp.task('test-container-build-doc-converter', gulp.series(['doc-converter-container-launch', 'sleep-2','container-test-doc-converter','container-stop-doc-converter']))
 
 gulp.task('doc-converter-build-docs', () => {
     return cp.spawnSync(DocConvreterDocBuilderScript, {

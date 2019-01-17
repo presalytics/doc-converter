@@ -3,16 +3,10 @@ import logging
 import sys
 import os
 from environs import Env
-#import ptvsd
+import ptvsd
 
 env = Env()
 env.read_env()
-
-# if os.environ.get('DocConverterRemoteDebug') == True:
-#     print("Waiting for Debugger attach...")
-#     ptvsd.enable_attach(address=(os.environ.get('DocConverterServer'), os.environ.get('DocConverterRemoteDebugPort')), redirect_output=True )
-#     ptvsd.wait_for_attached()
-#     breakpoint()
 
 file_path = os.path.join(os.path.dirname(__file__), '../log/doc_converter.log')
 logger = logging.getLogger()
@@ -42,4 +36,14 @@ def handle_exception(exc_type, exc_value, exc_traceback):
     logger.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
 
 sys.excepthook = handle_exception
+
+if os.environ.get('DocConverterRemoteDebug') == "True":
+    logger.info("Waiting for debugger attach...")
+    logger.info(os.environ.get('DocConverterServer'))
+    logger.info(os.environ.get('DocConverterRemoteDebugPort'))
+    ptvsd.enable_attach(address=(os.environ.get('DocConverterServer'), os.environ.get('DocConverterRemoteDebugPort')), redirect_output=True )
+    ptvsd.wait_for_attach()
+    ptvsd.break_into_debugger()
+    logger.info('Debugger attached.  Proceeding startup.')
+    breakpoint()
     

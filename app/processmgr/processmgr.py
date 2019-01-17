@@ -1,6 +1,6 @@
 """ Module for passing data to and from api and libreoffice subprocesses on the server """
 from subprocess import Popen, PIPE
-import os, sys
+import os, sys, uuid
 
 class processmgr:
     """ Container class for managing interface between flask and libreoffice subprocesses """
@@ -33,6 +33,7 @@ class processmgr:
         self.converted = False
         self.outfile = None
         self.command = self.build_command()
+        self.create_outfile_name()
 
     
 
@@ -78,19 +79,22 @@ class processmgr:
 
     def check_command(self):
         return self.command
+    
+    def create_outfile_name(self):
+        self.outfile = os.path.join(self.out_dir, processmgr.get_filename(self.in_filepath) + '.' + self.convert_type)
+        return self.outfile
 
     def convert(self):
         """ Converts a file using the libreoffice command line interface.  The converted filename is output. """
-        self.outfile = os.path.join(self.out_dir, processmgr.get_filename(self.in_filepath) + '.' + self.convert_type)
+        self.create_outfile_name()
         try:
             os.remove(self.outfile)
         except:
             pass
-        p = Popen(self.command, stdout=PIPE, stderr=PIPE)
+        p = Popen(self.command, stdout=PIPE, stderr=PIPE, bufsize=-1, close_fds=True)
         output, err = p.communicate()
         rc = p.returncode
         if rc == 0:
-            self.outfile = os.path.join(self.out_dir, processmgr.get_filename(self.in_filepath) + '.' + self.convert_type)
             if os.path.exists(self.outfile):
                 self.converted = True
                 return self.outfile
@@ -103,9 +107,4 @@ class processmgr:
                 #     "stderr: {}".format(str(err, 'utf-8')) #last line of thrown exception
                 # ])
         else:
-            raise IOError([
-                    "Conversion process exited with code {}.  Likely File Error.  Check for corrupted input file.".format(exit_code),
-                    "exit code: {}".format(rc),
-                    "stdout: {}".format(str(output, 'utf-8')),
-                    "stderr: {}".format(str(err, 'utf-8')) #last line of thrown exception
-                ])
+            raise IOError("Conversion process exited with code {}.  Likely File Error.  Check for corrupted input file.".format(rc))
