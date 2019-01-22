@@ -1,6 +1,7 @@
 """ Module for passing data to and from api and libreoffice subprocesses on the server """
 from subprocess import Popen, PIPE
-import os, sys, uuid
+import os, sys, uuid, time
+from app.spooler.spooler import svg_convert
 
 class processmgr:
     """ Container class for managing interface between flask and libreoffice subprocesses """
@@ -15,6 +16,8 @@ class processmgr:
         return os.path.basename(filepath).rsplit('.', 1)[0]
 
     ALLOWED_EXTENSIONS = ['ppt', 'pptx', 'doc', 'docx', 'xls', 'xlsx', 'odt', 'ods', 'odp', 'odg']
+    TIMEOUT_TIME = 10 # secs
+    EXPIRY_TIME = 3600 # secs
 
     @staticmethod
     def allowed_file(filename):
@@ -25,6 +28,7 @@ class processmgr:
         self.in_filepath = in_filepath
         self.convert_type = convert_type
         self.file_extension = processmgr.get_file_extension(in_filepath)
+        self.in_filename = processmgr.get_filename(self.in_filepath) + "." + self.file_extension
         if out_dir is None:
             self.out_dir = os.path.dirname(in_filepath)
         else:
@@ -34,6 +38,7 @@ class processmgr:
         self.outfile = None
         self.command = self.build_command()
         self.create_outfile_name()
+        self.token = str(uuid.uuid4())
 
     
 
@@ -50,6 +55,11 @@ class processmgr:
         "odg" : ["visio", "draw"]
     }
 
+    def get_token(self):
+        return self.token
+
+    
+
 
     def build_filter(self):
         """ builds the libreoffice 'filter' for commmand line file conversion """
@@ -60,7 +70,6 @@ class processmgr:
     def build_command(self):
         command = [
             "soffice",
-            "--headless",
             "--invisible",
             "--convert-to",
             "{}:{}".format(self.convert_type, self.filter),
@@ -108,3 +117,27 @@ class processmgr:
                 # ])
         else:
             raise IOError("Conversion process exited with code {}.  Likely File Error.  Check for corrupted input file.".format(rc))
+
+    def spool(self):
+        svg_convert.spool(
+            {
+                "filename": self.in_filepath,
+                "convert_type": self.convert_type,
+                "filter": self.filter,
+                "out_dir": self.out_dir,
+                "out_filename": self.outfile
+            }
+        )
+
+    def wait_for_completion(self):
+        start_time = time.time()
+        while not self.converted:
+            if os.path.exists(self.outfile):
+                self.converted = True
+                return True
+            else:
+                timer = time.time() - start_time
+                if timer > processmgr.TIMEOUT_TIME:
+                    return False
+                time.sleep(0.1)
+

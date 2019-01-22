@@ -2,15 +2,14 @@
 RPC API to convert file formats leveraging libreoffice subprocesses
 doc_converter.py contains main application loop and api routing
 """
-import os, sys, traceback, json, uuid
+import os, sys, traceback, json, uuid, time
 from flask import Flask, request, jsonify, redirect, url_for, send_file
 from werkzeug.utils import secure_filename
 from app.common import util# Loads static functions for module, constansts and an environment variables, should be 1st import
 from app.models.invalid_usage import invalid_usage
 from app.processmgr.convert_types import convert_types
 from app.processmgr.processmgr import processmgr
-from app.spooler import svg_convert
-
+import app.spooler 
 
 logger = util.logger
 
@@ -45,6 +44,11 @@ def server_error():
     """ Exception catch all for client errors based on server problems """
     raise invalid_usage("Internal server error.  Please review debug logs", status_code=502)
 
+@app.route('/timeout')
+def timeout_error():
+    """ Exception to catch designed-in timeout errors (large-files, etc.) """
+    raise invalid_usage("Timeout Error.  Please retry and/or break up file size.")
+
 @app.route('/svgconvert', methods=['GET', 'POST'])
 def svgconvert():
     """ Converts the uploaded file to an svg file. """
@@ -67,22 +71,12 @@ def svgconvert():
                 file.save(filepath)
                 try:
                     convert_obj = processmgr(filepath, convert_types.SVG, app.config['DOWNLOAD_FOLDER']) # 
-                    svg_convert.spool(
-                        {
-                            "filename": convert_obj.in_filename,
-                            "convert_type": convert_obj.convert_type,
-                            "filter": convert_obj.filter,
-                            "out_dir": app.config['DOWNLOAD_FOLDER'],
-                            "out_filename": convert_obj.outfile
-                        }
-                    )
-                    response = {
-                        "success": True,
-                        "queued_object": 
-                        "download_url":
-                        
-                    }
-                    return json.dumps(response), 200, {'ContentType':'application/json'}
+                    convert_obj.spool()
+                    convert_obj.wait_for_completion()
+                    if convert_obj.converted == True:
+                        return send_file(convert_obj.outfile)
+                    else:
+                        return redirect(url_for('timeout_error'))
                 except IOError as err:
                     logger.exception(err)
                     return redirect(url_for('server_error'))
@@ -94,6 +88,9 @@ def svgconvert():
         return redirect(url_for('bad_request'))
 
 
+        return send_file()
+    else:
+        return redirect(url_for('bad_request'))
 
 
 if __name__ == '__main__':

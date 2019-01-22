@@ -24,7 +24,7 @@ logger.addHandler(file_handler)
 log_level = logging.getLevelName(os.environ.get('DocConverterLogLevel'))
 logger.setLevel(log_level)
 
-logger.info("Logger Initialized")
+logger.info("Web App Logger Initialized")
 
 
 def handle_exception(exc_type, exc_value, exc_traceback):
@@ -37,10 +37,8 @@ def handle_exception(exc_type, exc_value, exc_traceback):
 
 sys.excepthook = handle_exception
 
-if os.environ.get('DocConverterRemoteDebug') == "True":
-    logger.info("Waiting for debugger attach...")
-    logger.info(os.environ.get('DocConverterServer'))
-    logger.info(os.environ.get('DocConverterRemoteDebugPort'))
+if os.environ.get('DocConverterDebug') == True:
+    logger.info("Waiting for debugger attach on {}:{}...".format(os.environ.get('DocConverterServer'), os.environ.get('DocConverterRemoteDebugPort')))
     ptvsd.enable_attach(address=(os.environ.get('DocConverterServer'), os.environ.get('DocConverterRemoteDebugPort')), redirect_output=True )
     ptvsd.wait_for_attach()
     ptvsd.break_into_debugger()
