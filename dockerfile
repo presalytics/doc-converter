@@ -20,8 +20,7 @@ COPY ./load-files/supervisord.conf /etc/supervisord.conf
 COPY ./load-files/.bashrc /root
 RUN ln -s /etc/nginx/sites-available/nginx.conf /etc/nginx/sites-enabled \
     && mkdir /tmp/uploads /tmp/downloads /tmp/svgspool \
-    && chown -R www-data:www-data ./app/log ./app/upload ./app/download /tmp/uploads /tmp/downloads /tmp/svgspool \
-    && alias log="tail -f /var/log/uwsgi/uwsgi.log -n 50"
+    && chown -R www-data:www-data ./app/log ./app/upload ./app/download /tmp/uploads /tmp/downloads /tmp/svgspool 
     
 
 #RUN chmod +x start.sh \

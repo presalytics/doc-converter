@@ -2,9 +2,21 @@
 from subprocess import Popen, PIPE
 import os, sys, uuid, time
 from app.spooler.spooler import svg_convert
+from app.storage.Blobber import Blobber
 
 class processmgr:
-    """ Container class for managing interface between flask and libreoffice subprocesses """
+    """ 
+    Container class for managing interface between flask and libreoffice subprocesses
+    
+    Arguments:
+        in_filepath {str} -- file to be convertered
+        convert_type {processmgr.convert_types} -- file type to convert to. Is a process_mgr.convert_types object
+            note: only convert_types.SVG is supported now
+        out_dir {str} -- (Optional) file path to directory where converted file should end up
+            after libreoffice runs its conversion
+        blob_name {str} -- (Optional) name of the blob where the converted file should be stored    
+    
+    """
     @staticmethod
     def get_file_extension(filepath):
         """ Gets a file extension from a filepath """
@@ -24,7 +36,8 @@ class processmgr:
         """ Determines filetypes from extension and whether it can be converted """
         return '.' in filename and processmgr.get_file_extension(filename) in processmgr.ALLOWED_EXTENSIONS
 
-    def __init__(self, in_filepath, convert_type, out_dir=None):
+    def __init__(self, in_filepath, convert_type, out_dir=None, blob_name=None):
+
         self.in_filepath = in_filepath
         self.convert_type = convert_type
         self.file_extension = processmgr.get_file_extension(in_filepath)
@@ -38,10 +51,10 @@ class processmgr:
         self.outfile = None
         self.command = self.build_command()
         self.create_outfile_name()
-        self.token = str(uuid.uuid4())
+        self.blob_name=blob_name
 
     
-
+    """ Maps file extensions to filter data """
     extension_map = {
         "ppt" : ["powerpoint", "impress"],
         "pptx" : ["powerpoint", "impress"],
@@ -54,10 +67,6 @@ class processmgr:
         "odp" : ["powerpoint", "impress"],
         "odg" : ["visio", "draw"]
     }
-
-    def get_token(self):
-        return self.token
-
     
 
 
@@ -90,6 +99,13 @@ class processmgr:
         return self.command
     
     def create_outfile_name(self):
+        """Generates the filename of the returned file after
+        libreoffice has completed file conversion
+        
+        Returns:
+            string -- file path to converted file (assuming file has been converted)
+        """
+
         self.outfile = os.path.join(self.out_dir, processmgr.get_filename(self.in_filepath) + '.' + self.convert_type)
         return self.outfile
 
@@ -119,17 +135,31 @@ class processmgr:
             raise IOError("Conversion process exited with code {}.  Likely File Error.  Check for corrupted input file.".format(rc))
 
     def spool(self):
+        """ Pushes convert information to uwsgi spooler
+            for aync conversion and post-processing
+        """
+
         svg_convert.spool(
             {
                 "filename": self.in_filepath,
                 "convert_type": self.convert_type,
                 "filter": self.filter,
                 "out_dir": self.out_dir,
-                "out_filename": self.outfile
+                "out_filename": self.outfile,
+                "blob_name": self.blob_name
             }
         )
 
     def wait_for_completion(self):
+        """Waits for file conversion to complete allowing for 
+        synchronous operations for file conversion.
+        
+        Returns:
+            Boolean -- returns True when file has converteed
+                returns false on a timeout error
+
+        """
+
         start_time = time.time()
         while not self.converted:
             if os.path.exists(self.outfile):
@@ -140,4 +170,6 @@ class processmgr:
                 if timer > processmgr.TIMEOUT_TIME:
                     return False
                 time.sleep(0.1)
+
+
 

@@ -9,12 +9,15 @@ from app.common import util# Loads static functions for module, constansts and a
 from app.models.invalid_usage import invalid_usage
 from app.processmgr.convert_types import convert_types
 from app.processmgr.processmgr import processmgr
+from app.storage.storagewrapper import Blobber
 import app.spooler 
 
 logger = util.logger
 
 app = Flask(__name__)
 app.config.from_pyfile('config.py')
+
+blobber = Blobber()
 
 @app.errorhandler(invalid_usage)
 def handle_invalid_usage(error):
@@ -56,27 +59,29 @@ def svgconvert():
         if request.method == 'POST':
             logger.info("Position 1")
             if 'file' not in request.files:
-                logger.info("error 1")
                 return redirect(url_for('bad_request'))
             file = request.files['file']
             if file.filename == '':
                 return redirect(url_for('invalid_file'))
             if file and processmgr.allowed_file(file.filename):
                 filename = secure_filename(file.filename)
-                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                blob_name = blobber.allocate_blob()
+                temp_filename = blob_name + "." + processmgr.get_file_extension(filename)
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], temp_filename)
                 try:
                     os.remove(filepath)
                 except:
                     pass
                 file.save(filepath)
                 try:
-                    convert_obj = processmgr(filepath, convert_types.SVG, app.config['DOWNLOAD_FOLDER']) # 
+                    convert_obj = processmgr(
+                        in_filepath=filepath,
+                        convert_type=convert_types.SVG,
+                        out_dir=app.config['DOWNLOAD_FOLDER'],
+                        blob_name=blob_name
+                    )
                     convert_obj.spool()
-                    convert_obj.wait_for_completion()
-                    if convert_obj.converted == True:
-                        return send_file(convert_obj.outfile)
-                    else:
-                        return redirect(url_for('timeout_error'))
+                    return blobber.get_blob_uri()
                 except IOError as err:
                     logger.exception(err)
                     return redirect(url_for('server_error'))
