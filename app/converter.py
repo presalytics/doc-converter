@@ -17,6 +17,7 @@ logger = util.logger
 app = Flask(__name__)
 app.config.from_pyfile('config.py')
 
+
 blobber = Blobber()
 
 @app.errorhandler(invalid_usage)
@@ -81,7 +82,7 @@ def svgconvert():
                         blob_name=blob_name
                     )
                     convert_obj.spool()
-                    return blobber.get_blob_uri()
+                    return blobber.get_blob_uri(blob_name=blob_name)
                 except IOError as err:
                     logger.exception(err)
                     return redirect(url_for('server_error'))

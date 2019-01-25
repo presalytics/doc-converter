@@ -21,10 +21,14 @@ class Blobber():
     def __init__(self):
         self.service = BlockBlobService(
             account_name=os.environ['Azure__AccountName'], 
-            account_key=os.environ['Azure__AccountKey']
+            account_key=os.environ['Azure__AccountKey'],
+            is_emulated=env.bool("Azure__IsEmulated", False)
         )
         self.container_name = os.environ['Azure__BlobContainers__Svg']
-        self.service.create_container(container_name=self.container_name)
+        self.service.create_container(
+            container_name=self.container_name,
+            fail_on_exist=False
+        )
         self.blob_placeholder = "Temp data -- Msg: This blob is allocated, but unused"
 
     def allocate_blob(self):
@@ -61,14 +65,6 @@ class Blobber():
         """
         Rewrites file at blob with blob_name to to file at file_path.
         
-        Returns: status_code (integer value)
-            status_code: 0 = operation successful
-            status_code: 1 = operation failed
-            function raises error on failed operations,
-            so status 1 code path should not be reached.
-            a return of status_code=1 means mean function failed outside
-            of designed code path.
-
         If no blob with blob_name is allocated, then method creates
         new blob in container with blob_name and uploads file
 

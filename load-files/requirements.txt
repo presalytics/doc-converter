@@ -2,3 +2,4 @@ uwsgi
 flask
 environs
 ptvsd
+azure-storage-blob

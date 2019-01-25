@@ -2,7 +2,7 @@ import os, logging, sys
 from environs import Env
 from uwsgidecorators import spool, cron
 from subprocess import Popen, PIPE, call
-from doc_converter.app.storage.storagewrapper import Blobber
+from app.storage.storagewrapper import Blobber
 
 env = Env()
 env_file = os.path.join(os.path.dirname(__file__), '..', '..', '..', '.env')
@@ -65,13 +65,21 @@ def svg_convert(args):
     
     #add methods for post-processing
     newfile = args['out_filename']
-    strip_scripts(newfile)
+
+#    strip_scripts(newfile)
     blob_name = args['blob_name']
     if blob_name is not None:
         upload_to_blob(blob_name, newfile)
 
 
 def strip_scripts(filename):
+    """ function to strip javascript out of svg file to reduce filesize.
+        NOTE:  Not implemented.  function works, just need to figure
+        out how to load js library front end.
+
+        TODO: add libreoffice scripts to javascript library so svg
+            files can be displayed without embedded js.
+    """
     stop = "<script type=".encode('utf-8')
     temp_filename = filename + ".tmp"
     with open(filename, encoding='utf-8') as infile, open(temp_filename, 'w', encoding='utf-8') as outfile:
@@ -93,7 +101,7 @@ def strip_scripts(filename):
 def upload_to_blob(blob_name, filename):
     svg_blobber.put_blob(
         blob_name=blob_name,
-        file_path=filename
+        filepath=filename
     )
 
     

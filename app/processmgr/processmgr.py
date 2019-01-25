@@ -2,7 +2,7 @@
 from subprocess import Popen, PIPE
 import os, sys, uuid, time
 from app.spooler.spooler import svg_convert
-from app.storage.Blobber import Blobber
+from app.storage.storagewrapper import Blobber
 
 class processmgr:
     """ 

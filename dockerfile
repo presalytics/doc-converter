@@ -9,6 +9,7 @@ ADD ./load-files/requirements.txt .
 RUN pip3 install -r requirements.txt \
     && mkdir /var/log/uwsgi
 
+
 COPY . /srv/doc_converter
 WORKDIR /srv/doc_converter
 
