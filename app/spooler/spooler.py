@@ -31,7 +31,10 @@ logger.info("Spooler Logger Initialized")
 BASE_ENV = os.environ.copy()
 BASE_ENV['HOME'] = "/tmp"
 
-svg_blobber = Blobber()
+try:
+    svg_blobber = Blobber()
+except:
+    logger.warning("Connection to Azure storage failed.  Unable to interact with blob storage")
 
 @spool(pass_arguments=True)
 def svg_convert(args):

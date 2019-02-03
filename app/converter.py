@@ -58,7 +58,6 @@ def svgconvert():
     """ Converts the uploaded file to an svg file. """
     try: 
         if request.method == 'POST':
-            logger.info("Position 1")
             if 'file' not in request.files:
                 return redirect(url_for('bad_request'))
             file = request.files['file']
