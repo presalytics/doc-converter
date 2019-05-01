@@ -1,10 +1,10 @@
 """ Module for passing data to and from api and libreoffice subprocesses on the server """
 from subprocess import Popen, PIPE
 import os, sys, uuid, time
-from app.spooler.spooler import svg_convert
-from app.storage.storagewrapper import Blobber
+from spooler.spooler import svg_convert
+from storage.storagewrapper import Blobber
 
-class processmgr:
+class ProcessMgr:
     """ 
     Container class for managing interface between flask and libreoffice subprocesses
     

@@ -2,4 +2,7 @@ uwsgi
 flask
 environs
 ptvsd
+pyyaml
 azure-storage-blob
+apispec
+apispec-webframeworks

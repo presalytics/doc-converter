@@ -2,8 +2,8 @@ import os, logging, sys, time, shutil
 from environs import Env
 from uwsgidecorators import spool, cron
 from subprocess import Popen, PIPE, call
-from app.storage.storagewrapper import Blobber
-from app.config import UPLOAD_FOLDER, DOWNLOAD_FOLDER
+from storage.storagewrapper import Blobber
+from config import UPLOAD_FOLDER, DOWNLOAD_FOLDER
 
 env = Env()
 env_file = os.path.join(os.path.dirname(__file__), '..', '..', '..', '.env')

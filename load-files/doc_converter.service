@@ -6,7 +6,8 @@ After=network.target
 User=www-data
 Group=www-data
 WorkingDirectory=/srv/doc_converter
-ExecStart=uwsgi --ini uwsig.ini
+ExecStart=uwsgi --ini uwsgi.ini
 
 [Install]
 WantedBy=multi-user.target
+logs

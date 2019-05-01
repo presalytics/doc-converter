@@ -3,24 +3,33 @@ RPC API to convert file formats leveraging libreoffice subprocesses
 doc_converter.py contains main application loop and api routing
 """
 import os, sys, traceback, json, uuid, time
+from apispec import APISpec
+from apispec_webframeworks.flask import FlaskPlugin
 from flask import Flask, request, jsonify, redirect, url_for, send_file
 from werkzeug.utils import secure_filename
-from app.common import util# Loads static functions for module, constansts and an environment variables, should be 1st import
-from app.models.invalid_usage import invalid_usage
-from app.processmgr.convert_types import convert_types
-from app.processmgr.processmgr import processmgr
-from app.storage.storagewrapper import Blobber
-import app.spooler 
+from common import util# Loads static functions for module, constansts and an environment variables, should be 1st import
+from models.invalid_usage import InvalidUsage
+from processmgr.convert_types import ConvertTypes
+from processmgr.processmgr import ProcessMgr
+from storage.storagewrapper import Blobber
+import spooler 
 
 logger = util.logger
 
 app = Flask(__name__)
 app.config.from_pyfile('config.py')
 
+spec = APISpec(
+    title="Doc Converter API",
+    version="0.1",
+    openapi_version="3.0.2",
+    plugins=[FlaskPlugin()]
+)
+
 
 blobber = Blobber()
 
-@app.errorhandler(invalid_usage)
+@app.errorhandler(InvalidUsage)
 def handle_invalid_usage(error):
     """ Handles invalid_usage errors """
     logger.error(error)
@@ -30,32 +39,79 @@ def handle_invalid_usage(error):
 
 @app.route("/")
 def hello():
-    """ test function """
+    """ 
+    test function to  indicate api is commucating
+    ---
+    get:
+        responses:
+            200:
+            -   description: OK
+                content:
+                    application/json:
+                        schema: 
+                            type: string
+                            description: hello world
+
+    """
     return "hello world!"
 
 @app.route('/invalidfile')
 def invalid_file():
     """ Exception for invalid file extensions """
-    raise invalid_usage("Invalid file type uploaded", status_code=415)
+    raise InvalidUsage("Invalid file type uploaded", status_code=415)
 
 @app.route('/badrequest')
 def bad_request():
     """ extension for catch all api errors based on client input """
-    raise invalid_usage("Bad request.  Inspect method allow request formats.", status_code=400)
+    raise InvalidUsage("Bad request.  Inspect method allow request formats.", status_code=400)
 
 @app.route('/servererror')
 def server_error():
     """ Exception catch all for client errors based on server problems """
-    raise invalid_usage("Internal server error.  Please review debug logs", status_code=502)
+    raise InvalidUsage("Internal server error.  Please review debug logs", status_code=502)
 
 @app.route('/timeout')
 def timeout_error():
     """ Exception to catch designed-in timeout errors (large-files, etc.) """
-    raise invalid_usage("Timeout Error.  Please retry and/or break up file size.")
+    raise InvalidUsage("Timeout Error.  Please retry and/or break up file size.")
 
-@app.route('/svgconvert', methods=['GET', 'POST'])
+@app.route('/svgconvert', methods=['POST'])
 def svgconvert():
-    """ Converts the uploaded file to an svg file. """
+    """ 
+    Converts the uploaded file to an svg file. 
+    ---
+    post:
+        summary: converts pptx file to svg image
+
+        requestBody:
+            description: Filepath to pptx file
+            required: True
+            content:
+                multipart/form-data:
+                    schema:
+                        type: object
+                        properties:
+                            filename:
+                                type: string
+                                format: binary
+
+        responses:
+            200:
+                description: Url of svg file
+                content:
+                    application/json:
+                        schema:
+                            type: string
+                            description: url of converted file
+            400:
+                description: Bad Request.
+            415:
+                description: Invalid file type
+            
+
+
+
+    """
     try: 
         if request.method == 'POST':
             if 'file' not in request.files:
@@ -63,7 +119,7 @@ def svgconvert():
             file = request.files['file']
             if file.filename == '':
                 return redirect(url_for('invalid_file'))
-            if file and processmgr.allowed_file(file.filename):
+            if file and ProcessMgr.allowed_file(file.filename):
                 filename = secure_filename(file.filename)
                 blob_name = blobber.allocate_blob()
                 temp_filename = blob_name + "." + processmgr.get_file_extension(filename)
@@ -96,6 +152,21 @@ def svgconvert():
         return send_file()
     else:
         return redirect(url_for('bad_request'))
+
+
+with app.test_request_context():
+    spec.path(view=svgconvert)
+    spec.path(view=hello)
+
+open_api_file = "/srv/doc_converter/doc_converter/docs/openapi.json"
+
+
+with open(open_api_file, "w") as apifile:
+    json.dump(spec.to_dict(), apifile, indent=4)
+
+@app.route("/docs/openapi.json")
+def openapi_json():
+    return send_file(open_api_file)
 
 
 if __name__ == '__main__':

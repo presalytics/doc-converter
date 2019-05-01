@@ -1,5 +1,5 @@
 """ Holds classes for error messages """
-class invalid_usage(Exception):
+class InvalidUsage(Exception):
     """ returns a custom error message to client """
     status_code = 400
 

@@ -1,4 +1,4 @@
-class convert_types:
+class ConvertTypes:
     "Conversion type options for processmgr"
     SVG = "svg"
     PNG = "png"
