@@ -10,7 +10,7 @@ class ProcessMgr:
     
     Arguments:
         in_filepath {str} -- file to be convertered
-        convert_type {processmgr.convert_types} -- file type to convert to. Is a process_mgr.convert_types object
+        convert_type {ProcessMgr.convert_types} -- file type to convert to. Is a process_mgr.convert_types object
             note: only convert_types.SVG is supported now
         out_dir {str} -- (Optional) file path to directory where converted file should end up
             after libreoffice runs its conversion
@@ -34,14 +34,14 @@ class ProcessMgr:
     @staticmethod
     def allowed_file(filename):
         """ Determines filetypes from extension and whether it can be converted """
-        return '.' in filename and processmgr.get_file_extension(filename) in processmgr.ALLOWED_EXTENSIONS
+        return '.' in filename and ProcessMgr.get_file_extension(filename) in ProcessMgr.ALLOWED_EXTENSIONS
 
     def __init__(self, in_filepath, convert_type, out_dir=None, blob_name=None):
 
         self.in_filepath = in_filepath
         self.convert_type = convert_type
-        self.file_extension = processmgr.get_file_extension(in_filepath)
-        self.in_filename = processmgr.get_filename(self.in_filepath) + "." + self.file_extension
+        self.file_extension = ProcessMgr.get_file_extension(in_filepath)
+        self.in_filename = ProcessMgr.get_filename(self.in_filepath) + "." + self.file_extension
         if out_dir is None:
             self.out_dir = os.path.dirname(in_filepath)
         else:
@@ -72,7 +72,7 @@ class ProcessMgr:
 
     def build_filter(self):
         """ builds the libreoffice 'filter' for commmand line file conversion """
-        program = processmgr.extension_map[self.file_extension][1]
+        program = ProcessMgr.extension_map[self.file_extension][1]
         export = "{}_{}_Export".format(program, self.convert_type)
         self.filter = export
     
@@ -106,7 +106,7 @@ class ProcessMgr:
             string -- file path to converted file (assuming file has been converted)
         """
 
-        self.outfile = os.path.join(self.out_dir, processmgr.get_filename(self.in_filepath) + '.' + self.convert_type)
+        self.outfile = os.path.join(self.out_dir, ProcessMgr.get_filename(self.in_filepath) + '.' + self.convert_type)
         return self.outfile
 
     def convert(self):
@@ -167,7 +167,7 @@ class ProcessMgr:
                 return True
             else:
                 timer = time.time() - start_time
-                if timer > processmgr.TIMEOUT_TIME:
+                if timer > ProcessMgr.TIMEOUT_TIME:
                     return False
                 time.sleep(0.1)
 

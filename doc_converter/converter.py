@@ -2,9 +2,10 @@
 RPC API to convert file formats leveraging libreoffice subprocesses
 doc_converter.py contains main application loop and api routing
 """
-import os, sys, traceback, json, uuid, time
+import os, sys, traceback, json, uuid, time, yaml
 from apispec import APISpec
 from apispec_webframeworks.flask import FlaskPlugin
+from apispec.utils import validate_spec
 from flask import Flask, request, jsonify, redirect, url_for, send_file
 from werkzeug.utils import secure_filename
 from common import util# Loads static functions for module, constansts and an environment variables, should be 1st import
@@ -19,14 +20,6 @@ logger = util.logger
 app = Flask(__name__)
 app.config.from_pyfile('config.py')
 
-spec = APISpec(
-    title="Doc Converter API",
-    version="0.1",
-    openapi_version="3.0.2",
-    plugins=[FlaskPlugin()]
-)
-
-
 blobber = Blobber()
 
 @app.errorhandler(InvalidUsage)
@@ -40,17 +33,18 @@ def handle_invalid_usage(error):
 @app.route("/")
 def hello():
     """ 
-    test function to  indicate api is commucating
+    test function to  indicate api is communications
+    
+    Returns: "Hello
     ---
     get:
         responses:
             200:
-            -   description: OK
+                description: OK
                 content:
                     application/json:
-                        schema: 
+                        schema:
                             type: string
-                            description: hello world
 
     """
     return "hello world!"
@@ -91,7 +85,7 @@ def svgconvert():
                     schema:
                         type: object
                         properties:
-                            filename:
+                            file:
                                 type: string
                                 format: binary
 
@@ -115,6 +109,7 @@ def svgconvert():
     try: 
         if request.method == 'POST':
             if 'file' not in request.files:
+                logger.debug("Malformed request: file not included in post data")
                 return redirect(url_for('bad_request'))
             file = request.files['file']
             if file.filename == '':
@@ -122,7 +117,7 @@ def svgconvert():
             if file and ProcessMgr.allowed_file(file.filename):
                 filename = secure_filename(file.filename)
                 blob_name = blobber.allocate_blob()
-                temp_filename = blob_name + "." + processmgr.get_file_extension(filename)
+                temp_filename = blob_name + "." + ProcessMgr.get_file_extension(filename)
                 filepath = os.path.join(app.config['UPLOAD_FOLDER'], temp_filename)
                 try:
                     os.remove(filepath)
@@ -130,9 +125,9 @@ def svgconvert():
                     pass
                 file.save(filepath)
                 try:
-                    convert_obj = processmgr(
+                    convert_obj = ProcessMgr(
                         in_filepath=filepath,
-                        convert_type=convert_types.SVG,
+                        convert_type=ConvertTypes.SVG,
                         out_dir=app.config['DOWNLOAD_FOLDER'],
                         blob_name=blob_name
                     )
@@ -143,6 +138,7 @@ def svgconvert():
                     return redirect(url_for('server_error'))
 
         elif request.method == 'GET':
+            logger.debug("Unallowed Method")
             return redirect(url_for('bad_request'))
     except Exception as err:
         logger.exception(err)
@@ -154,9 +150,45 @@ def svgconvert():
         return redirect(url_for('bad_request'))
 
 
+OPENAPI_BASE = """
+openapi: 3.0.2
+info:
+  description: This api converts file formats of OpenXml and OpenOffice documents formats to vector files (e.g., svg)
+  title: Doc Converter API
+  version: 1.0.0
+servers:
+- url: http://127.0.0.1:{port}/
+  description: Base server
+  variables:
+    port:
+      enum:
+      - '5002'
+      - '5052'
+      default: '5002'
+
+"""
+
+settings = yaml.safe_load(OPENAPI_BASE)
+# retrieve  title, version, and openapi version
+title = settings["info"].pop("title")
+spec_version = settings["info"].pop("version")
+openapi_version = settings.pop("openapi")
+
+spec = APISpec(
+    title="Doc Converter API",
+    version="0.1",
+    openapi_version="3.0.2",
+    plugins=[FlaskPlugin()],
+    **settings
+)
+
+
+
 with app.test_request_context():
     spec.path(view=svgconvert)
     spec.path(view=hello)
+
+validate_spec(spec)
 
 open_api_file = "/srv/doc_converter/doc_converter/docs/openapi.json"
 
