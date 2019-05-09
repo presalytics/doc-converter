@@ -6,7 +6,7 @@ import os, sys, traceback, json, uuid, time, yaml
 from apispec import APISpec
 from apispec_webframeworks.flask import FlaskPlugin
 from apispec.utils import validate_spec
-from flask import Flask, request, jsonify, redirect, url_for, send_file
+from flask import Flask, request, jsonify, redirect, url_for, send_file, Blueprint
 from werkzeug.utils import secure_filename
 from common import util# Loads static functions for module, constansts and an environment variables, should be 1st import
 from models.invalid_usage import InvalidUsage
@@ -14,6 +14,7 @@ from processmgr.convert_types import ConvertTypes
 from processmgr.processmgr import ProcessMgr
 from storage.storagewrapper import Blobber
 import spooler 
+from common import cleaner # cron job for temp file cleanup
 
 logger = util.logger
 
@@ -21,6 +22,8 @@ app = Flask(__name__)
 app.config.from_pyfile('config.py')
 
 blobber = Blobber()
+
+dc = Blueprint(app.config['APPLICATION_ROOT'], __name__)
 
 @app.errorhandler(InvalidUsage)
 def handle_invalid_usage(error):
@@ -30,7 +33,7 @@ def handle_invalid_usage(error):
     response.status_code = error.status_code
     return response
 
-@app.route("/")
+@dc.route("/")
 def hello():
     """ 
     test function to  indicate api is communications
@@ -49,27 +52,27 @@ def hello():
     """
     return "hello world!"
 
-@app.route('/invalidfile')
+@dc.route('/invalidfile')
 def invalid_file():
     """ Exception for invalid file extensions """
     raise InvalidUsage("Invalid file type uploaded", status_code=415)
 
-@app.route('/badrequest')
+@dc.route('/badrequest')
 def bad_request():
     """ extension for catch all api errors based on client input """
     raise InvalidUsage("Bad request.  Inspect method allow request formats.", status_code=400)
 
-@app.route('/servererror')
+@dc.route('/servererror')
 def server_error():
     """ Exception catch all for client errors based on server problems """
     raise InvalidUsage("Internal server error.  Please review debug logs", status_code=502)
 
-@app.route('/timeout')
+@dc.route('/timeout')
 def timeout_error():
     """ Exception to catch designed-in timeout errors (large-files, etc.) """
     raise InvalidUsage("Timeout Error.  Please retry and/or break up file size.")
 
-@app.route('/svgconvert', methods=['POST'])
+@dc.route('/svgconvert', methods=['POST'])
 def svgconvert():
     """ 
     Converts the uploaded file to an svg file. 
@@ -102,8 +105,6 @@ def svgconvert():
             415:
                 description: Invalid file type
             
-
-
 
     """
     try: 
@@ -157,14 +158,14 @@ info:
   title: Doc Converter API
   version: 1.0.0
 servers:
-- url: http://127.0.0.1:{port}/
+- url: "{protocol}://api.presalytics.io"
   description: Base server
   variables:
-    port:
+    protocol:
       enum:
-      - '5002'
-      - '5052'
-      default: '5002'
+      - https
+      - http
+      default: https
 
 """
 
@@ -183,6 +184,7 @@ spec = APISpec(
 )
 
 
+app.register_blueprint(dc)
 
 with app.test_request_context():
     spec.path(view=svgconvert)
@@ -196,7 +198,7 @@ open_api_file = "/srv/doc_converter/doc_converter/docs/openapi.json"
 with open(open_api_file, "w") as apifile:
     json.dump(spec.to_dict(), apifile, indent=4)
 
-@app.route("/docs/openapi.json")
+@app.route("/doc-converter/docs/openapi.json")
 def openapi_json():
     return send_file(open_api_file)
 

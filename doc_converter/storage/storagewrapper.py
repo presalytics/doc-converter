@@ -7,6 +7,7 @@ from azure.storage.blob import BlockBlobService
 env = Env()
 env.read_env()
 
+
 class Blobber():
     """ 
     Wrapper class for azure blob service
@@ -19,9 +20,16 @@ class Blobber():
     Init then creates/accesses container for the service.
     """
     def __init__(self):
+
+        if "Azure__Host" in os.environ:
+            AZURE_DOMAIN =  os.environ['Azure__Host']
+        else:
+            AZURE_DOMAIN = None
         self.service = BlockBlobService(
             account_name=os.environ['Azure__AccountName'], 
             account_key=os.environ['Azure__AccountKey'],
+
+            custom_domain=AZURE_DOMAIN,
             is_emulated=env.bool("Azure__IsEmulated", False)
         )
         self.container_name = os.environ['Azure__BlobContainers__Svg']

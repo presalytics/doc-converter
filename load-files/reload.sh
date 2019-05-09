@@ -9,4 +9,6 @@ echo "IP Address: ${DocConverterServer}"
 docker stop doc-converter || true && docker rm doc-converter || true
 docker build ./.. -t doc-converter --no-cache --build-arg DocConverterPort=${DocConverterPort} --build-arg DocConverterServer=${DocConverterServer} --build-arg DocConverterRemoteDebugPort=${DocConverterRemoteDebugPort}
 docker run -d -t --network=host -p ${DocConverterServer}:${DocConverterPort}:${DocConverterPort} -p ${DocConverterServer}:${DocConverterRemoteDebugPort}:${DocConverterRemoteDebugPort} --name doc-converter --env-file ./../../.env doc-converter
+docker tag doc-converter khannegan/chart-a-lot:doc-converter
+docker push khannegan/chart-a-lot:doc-converter
 docker logs doc-converter

@@ -19,8 +19,9 @@ COPY ./load-files/doc_converter.service /etc/systemd/system/doc_converter.servic
 COPY ./load-files/supervisord.conf /etc/supervisord.conf
 COPY ./load-files/.bashrc /root
 RUN ln -s /etc/nginx/sites-available/nginx.conf /etc/nginx/sites-enabled \
-    && mkdir /tmp/uploads /tmp/downloads /tmp/svgspool ./doc_converter/docs \
-    && chown -R www-data:www-data ./doc_converter/log ./doc_converter/upload ./doc_converter/download /tmp/uploads /tmp/downloads /tmp/svgspool ./doc_converter/docs
+    && if [ -d ./doc_converter/log ] ; then rm -r ./doc_converter/log ; fi \
+    && mkdir /tmp/uploads /tmp/downloads /tmp/svgspool ./doc_converter/docs ./doc_converter/log \
+    && chown -R www-data:www-data ./doc_converter/log /tmp/uploads /tmp/downloads /tmp/svgspool ./doc_converter/docs
     
 
 #RUN chmod +x start.sh \

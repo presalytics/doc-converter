@@ -2,3 +2,4 @@
 
 UPLOAD_FOLDER = '/tmp/uploads'
 DOWNLOAD_FOLDER = '/tmp/downloads'
+APPLICATION_ROOT = '/doc-converter'

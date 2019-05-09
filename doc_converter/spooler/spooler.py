@@ -1,6 +1,6 @@
 import os, logging, sys, time, shutil
 from environs import Env
-from uwsgidecorators import spool, cron
+from uwsgidecorators import spool
 from subprocess import Popen, PIPE, call
 from storage.storagewrapper import Blobber
 from config import UPLOAD_FOLDER, DOWNLOAD_FOLDER
@@ -112,28 +112,6 @@ def upload_to_blob(blob_name, filename):
         blob_name=blob_name,
         filepath=filename
     )
-
-@cron(-1, -1, -1, -1, -1)
-def cleanup_files(num):
-    """
-    Cleans up upload and download folders
-    """
-    current_time = time.time()
-    files_cleared = 0
-    for fld in cleanup_folders:
-        for the_file in os.listdir(fld):
-            file_path = os.path.join(fld, the_file)
-            creation_time = os.path.getctime(file_path)
-            if (current_time - creation_time) > 1800:
-                try:
-                    if os.path.isfile(file_path):
-                        os.unlink(file_path)
-                        files_cleared += 1
-                    elif os.path.isdir(file_path): shutil.rmtree(file_path)
-                except Exception as e:
-                    logger.error(e)
-    logger.info("Cleanup operation complete. {} files cleared.".format(files_cleared))
-
 
     
 
