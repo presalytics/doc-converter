@@ -156,7 +156,13 @@ openapi: 3.0.2
 info:
   description: This api converts file formats of OpenXml and OpenOffice documents formats to vector files (e.g., svg)
   title: Doc Converter API
-  version: 1.0.0
+  version: 0.1.0
+  contact:
+    name: Presalytics.io
+    url: http://presalytics.io
+    email: kevin@presalytics.io
+  license:
+    name: AGPL
 servers:
 - url: "{protocol}://api.presalytics.io"
   description: Base server
