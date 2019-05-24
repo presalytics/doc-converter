@@ -21,8 +21,8 @@ class Blobber():
     """
     def __init__(self):
 
-        if "Azure__Host" in os.environ:
-            AZURE_DOMAIN =  os.environ['Azure__Host']
+        if "Azure__BlobEndpoint" in os.environ:
+            AZURE_DOMAIN =  os.environ['Azure__BlobEndpoint']
         else:
             AZURE_DOMAIN = None
         self.service = BlockBlobService(
