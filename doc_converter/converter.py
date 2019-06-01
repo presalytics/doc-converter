@@ -41,6 +41,9 @@ def hello():
     Returns: "Hello
     ---
     get:
+        description: Test function to get return inforation
+        summary: Says Hello
+        operationId: SayHello
         responses:
             200:
                 description: OK
@@ -79,7 +82,7 @@ def svgconvert():
     ---
     post:
         summary: converts pptx file to svg image
-
+        operationId: ConvertToSvg
         requestBody:
             description: Filepath to pptx file
             required: True
@@ -152,10 +155,10 @@ def svgconvert():
 
 
 OPENAPI_BASE = """
-openapi: 3.0.2
+openapi: 2.0
 info:
   description: This api converts file formats of OpenXml and OpenOffice documents formats to vector files (e.g., svg)
-  title: Doc Converter API
+  title: Doc Converter
   version: 0.1.0
   contact:
     name: Presalytics.io

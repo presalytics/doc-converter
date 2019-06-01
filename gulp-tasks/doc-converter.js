@@ -10,9 +10,8 @@ const scriptfile = path.join(workingDirectory, "reload.sh");
 const ProjectRoot = process.env.ProjectRoot;
 const DocConverterServer = process.env.DocConverterServer;
 const DocConverterPort = process.env.DocConverterPort;
-const DocConverterReloadScript = path.join(__dirname, '..', 'load-files', 'reload.sh');
-const DocConverterDocsDirectory = path.join(__dirname,'..', 'docs');
-const DocConvreterDocBuilderScript = path.join(DocConverterDocsDirectory, 'docbuilder.sh');
+const baseDir = path.join(__dirname, '..');
+const k8sDir = path.join(baseDir, '..', 'k8s', 'config', 'doc-converter')
 
 function execute(command, callback){
     return cp.exec(command, function(error, stdout, stderr){ callback(stdout); });
@@ -88,10 +87,40 @@ gulp.task('container-stop-doc-converter', () => {
 
 gulp.task('test-container-build-doc-converter', gulp.series(['doc-converter-container-launch', 'sleep-2','container-test-doc-converter','container-stop-doc-converter']))
 
-gulp.task('doc-converter-build-docs', () => {
-    return cp.spawnSync(DocConvreterDocBuilderScript, {
-        cwd:DocConverterDocsDirectory,
-        stdio: [0, 1, 2], 
-        env: process.env
-    });
-}); 
+
+const dcprocessConfig = {
+    cwd: baseDir,
+    stdio: [0,1,2],
+    env: process.env
+};
+
+dck8sProcessConfig = {
+    cwd: k8sDir,
+    stdio: [0,1,2],
+    env: process.env
+};
+
+gulp.task('doc-converter-docker-build', async () => {
+    cp.execSync("docker build . -t khannegan/chart-a-lot:doc-converter", dcprocessConfig)
+});
+
+gulp.task('doc-converter-docker-push', async () => {
+    cp.execSync("docker push khannegan/chart-a-lot:doc-converter", dcprocessConfig)
+});
+
+gulp.task('doc-converter-k8s-update-config', async ()=> {
+    cp.execSync("kubectl apply -f .", dck8sProcessConfig)
+});
+
+gulp.task('doc-converter-k8s-delete-pod', async ()=> {
+    cp.execSync("kubectl delete pod -n api -l app=doc-converter", dck8sProcessConfig)
+});
+
+gulp.task('doc-converter-redeploy',
+    gulp.series(
+        'doc-converter-docker-build',
+        'doc-converter-docker-push',
+        'doc-converter-k8s-update-config',
+        'doc-converter-k8s-delete-pod'
+    )
+);

@@ -1,9 +1,5 @@
 FROM libreoffice_python
 
-ENV DocConverterPort ${DocConverterPort}
-ENV DocConverterServer ${DocConverterServer}
-ENV DocConverterRemoteDebugPort ${DocConverterRemoteDebugPort}
-
 # when supervisord for python3 (supervisor v4+) gets installed in the pip package direcotry, install supervisor with requirements.txt.  Temporaliyt install from source
 ADD ./load-files/requirements.txt .
 RUN pip3 install -r requirements.txt \
@@ -23,12 +19,6 @@ RUN ln -s /etc/nginx/sites-available/nginx.conf /etc/nginx/sites-enabled \
     && mkdir /tmp/uploads /tmp/downloads /tmp/svgspool ./doc_converter/docs ./doc_converter/log \
     && chown -R www-data:www-data ./doc_converter/log /tmp/uploads /tmp/downloads /tmp/svgspool ./doc_converter/docs
     
-
-#RUN chmod +x start.sh \
-#    && chmod +x status.sh
-
-
-EXPOSE ${DocConverterPort}
-EXPOSE ${DocConverterRemoteDebugPort}
+EXPOSE 5002
 
 CMD [ "supervisord" ]

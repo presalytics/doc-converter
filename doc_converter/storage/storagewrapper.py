@@ -3,6 +3,7 @@
 import os, uuid
 from environs import Env
 from azure.storage.blob import BlockBlobService
+from common.util import logger
 
 env = Env()
 env.read_env()
@@ -20,24 +21,42 @@ class Blobber():
     Init then creates/accesses container for the service.
     """
     def __init__(self):
+        try:
+        # if "Azure__BlobEndpoint" in os.environ:
+        #     AZURE_DOMAIN =  os.environ['Azure__BlobEndpoint']
+        # else:
+        #     AZURE_DOMAIN = None
+        # protocol = "https"
+        # if env.bool("Azure__IsEmulated"):
+        #     protocol = "http"
+        # self.service = BlockBlobService(
+        #     account_name=os.environ['Azure__AccountName'], 
+        #     account_key=os.environ['Azure__AccountKey'],
+        #     custom_domain=AZURE_DOMAIN,
+        #     protocol=protocol
+        # )
+            self.build_azure_connection_string()
+            self.service = BlockBlobService(connection_string=self.connection_string)
+            self.container_name = os.environ['Azure__BlobContainers__Svgs']
+            self.service.create_container(
+                container_name=self.container_name,
+                fail_on_exist=False
+            )
+            self.blob_placeholder = "Temp data -- Msg: This blob is allocated, but unused"
+        except Exception as err:
+            logger.info("Blob connection failed with connection string: {}".format(self.connection_string))
+            logger.error(err)
 
-        if "Azure__BlobEndpoint" in os.environ:
-            AZURE_DOMAIN =  os.environ['Azure__BlobEndpoint']
-        else:
-            AZURE_DOMAIN = None
-        self.service = BlockBlobService(
-            account_name=os.environ['Azure__AccountName'], 
-            account_key=os.environ['Azure__AccountKey'],
+    def build_azure_connection_string(self):
+        protocol = "DefaultEndpointsProtocol=https;"
+        if env.bool("Azure__IsEmulated", False):
+            protocol = "DefaultEndpointsProtocol=http;"
+        account_name = "AccountName={};".format(os.environ['Azure__AccountName'])
+        account_key = "AccountKey={};".format(os.environ['Azure__AccountKey'])
+        blob_endpoint = "BlobEndpoint=http://{};".format(os.environ['Azure__BlobEndpoint'])
+        self.connection_string = protocol + account_name + account_key + blob_endpoint
 
-            custom_domain=AZURE_DOMAIN,
-            is_emulated=env.bool("Azure__IsEmulated", False)
-        )
-        self.container_name = os.environ['Azure__BlobContainers__Svg']
-        self.service.create_container(
-            container_name=self.container_name,
-            fail_on_exist=False
-        )
-        self.blob_placeholder = "Temp data -- Msg: This blob is allocated, but unused"
+
 
     def allocate_blob(self):
         """
