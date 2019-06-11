@@ -155,7 +155,7 @@ def svgconvert():
 
 
 OPENAPI_BASE = """
-openapi: 2.0
+openapi: 3.0
 info:
   description: This api converts file formats of OpenXml and OpenOffice documents formats to vector files (e.g., svg)
   title: Doc Converter
@@ -166,13 +166,13 @@ info:
     email: kevin@presalytics.io
   license:
     name: AGPL
+
 servers:
 - url: "{protocol}://api.presalytics.io"
   description: Base server
   variables:
     protocol:
       enum:
-      - https
       - http
       default: https
 
