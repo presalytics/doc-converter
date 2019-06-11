@@ -185,7 +185,7 @@ spec_version = settings["info"].pop("version")
 openapi_version = settings.pop("openapi")
 
 spec = APISpec(
-    title="Doc Converter API",
+    title="Doc Converter",
     version="0.1",
     openapi_version="3.0.2",
     plugins=[FlaskPlugin()],
