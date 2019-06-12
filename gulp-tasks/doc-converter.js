@@ -94,7 +94,7 @@ const dcprocessConfig = {
     env: process.env
 };
 
-dck8sProcessConfig = {
+const dck8sProcessConfig = {
     cwd: k8sDir,
     stdio: [0,1,2],
     env: process.env
