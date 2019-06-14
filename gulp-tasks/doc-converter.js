@@ -101,7 +101,7 @@ const dck8sProcessConfig = {
 };
 
 gulp.task('doc-converter-docker-build', async () => {
-    cp.execSync("docker build . -t khannegan/chart-a-lot:doc-converter", dcprocessConfig)
+    cp.execSync("docker build . -t khannegan/chart-a-lot:doc-converter --network=host --no-cache", dcprocessConfig)
 });
 
 gulp.task('doc-converter-docker-push', async () => {

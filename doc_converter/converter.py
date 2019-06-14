@@ -50,6 +50,7 @@ def hello():
                 content:
                     application/json:
                         schema:
+                            title: Hello
                             type: string
 
     """
@@ -89,6 +90,7 @@ def svgconvert():
             content:
                 multipart/form-data:
                     schema:
+                        title: File to Convert
                         type: object
                         properties:
                             file:
@@ -102,6 +104,7 @@ def svgconvert():
                     application/json:
                         schema:
                             type: string
+                            title: File Url
                             description: url of converted file
             400:
                 description: Bad Request.
