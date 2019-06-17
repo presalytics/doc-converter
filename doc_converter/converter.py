@@ -171,13 +171,13 @@ info:
     name: AGPL
 
 servers:
-- url: "{protocol}://api.presalytics.io"
+- url: http://api.presalytics.io/doc-converter
   description: Base server
   variables:
     protocol:
       enum:
       - http
-      default: https
+      default: http
 
 """
 
