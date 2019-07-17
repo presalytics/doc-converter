@@ -179,17 +179,6 @@ servers:
       - http
       default: http
 
-components:
-  securitySchemes:
-    openId:
-      type: openIdConnect
-      openIdConnectUrl: http://auth.presalytics.io/auth/realms/presalytics/.well-known/openid-configuration
-
-security:
-  - openId
-    - profile
-  
-
 """
 
 settings = yaml.safe_load(OPENAPI_BASE)
