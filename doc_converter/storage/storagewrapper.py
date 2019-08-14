@@ -50,10 +50,10 @@ class Blobber():
     def build_azure_connection_string(self):
         protocol = "DefaultEndpointsProtocol=https;"
         if env.bool("Azure__IsEmulated", False):
-            protocol = "DefaultEndpointsProtocol=http;"
+            protocol = "DefaultEndpointsProtocol=https;"
         account_name = "AccountName={};".format(os.environ['Azure__AccountName'])
         account_key = "AccountKey={};".format(os.environ['Azure__AccountKey'])
-        blob_endpoint = "BlobEndpoint=http://{};".format(os.environ['Azure__BlobEndpoint'])
+        blob_endpoint = "BlobEndpoint=https://{};".format(os.environ['Azure__BlobEndpoint'])
         self.connection_string = protocol + account_name + account_key + blob_endpoint
 
 

@@ -1,4 +1,4 @@
-FROM libreoffice_python
+FROM khannegan/chart-a-lot:libreoffice-python
 
 # when supervisord for python3 (supervisor v4+) gets installed in the pip package direcotry, install supervisor with requirements.txt.  Temporaliyt install from source
 ADD ./load-files/requirements.txt .

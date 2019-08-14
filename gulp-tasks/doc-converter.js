@@ -10,8 +10,8 @@ const scriptfile = path.join(workingDirectory, "reload.sh");
 const ProjectRoot = process.env.ProjectRoot;
 const DocConverterServer = process.env.DocConverterServer;
 const DocConverterPort = process.env.DocConverterPort;
-const baseDir = path.join(__dirname, '..');
-const k8sDir = path.join(baseDir, '..', 'k8s', 'config', 'doc-converter')
+const dcbaseDir = path.join(__dirname, '..');
+const dck8sDir = path.join(dcbaseDir, '..', 'k8s', 'config', 'doc-converter')
 
 function execute(command, callback){
     return cp.exec(command, function(error, stdout, stderr){ callback(stdout); });
@@ -89,13 +89,13 @@ gulp.task('test-container-build-doc-converter', gulp.series(['doc-converter-cont
 
 
 const dcprocessConfig = {
-    cwd: baseDir,
+    cwd: dcbaseDir,
     stdio: [0,1,2],
     env: process.env
 };
 
 const dck8sProcessConfig = {
-    cwd: k8sDir,
+    cwd: dck8sDir,
     stdio: [0,1,2],
     env: process.env
 };
