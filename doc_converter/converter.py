@@ -38,7 +38,7 @@ def hello():
     """ 
     test function to  indicate api is communications
     
-    Returns: "Hello
+    Returns: "hello world!"
     ---
     get:
         description: Test function to get return inforation
@@ -171,13 +171,13 @@ info:
     name: AGPL
 
 servers:
-- url: http://api.presalytics.io/doc-converter
+- url: https://api.presalytics.io/doc-converter/
   description: Base server
   variables:
     protocol:
       enum:
-      - http
-      default: http
+      - https
+      default: https
 
 """
 
@@ -196,7 +196,7 @@ spec = APISpec(
 )
 
 
-app.register_blueprint(dc)
+app.register_blueprint(dc, url_prefix=app.config['APPLICATION_ROOT'])
 
 with app.test_request_context():
     spec.path(view=svgconvert)
