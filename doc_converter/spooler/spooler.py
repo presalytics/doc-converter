@@ -1,33 +1,24 @@
 import os, logging, sys, time, shutil
 from environs import Env
-from uwsgidecorators import spool
 from subprocess import Popen, PIPE, call
-from storage.storagewrapper import Blobber
-from config import UPLOAD_FOLDER, DOWNLOAD_FOLDER
+from doc_converter.storage.storagewrapper import Blobber
+from doc_converter.config import UPLOAD_FOLDER, DOWNLOAD_FOLDER
+try:
+    from uwsgidecorators import spool #cannot run this in debug mode on local machine, uwsgi must be running
+except:
+    # Creates a null spooler decorator for debugging purposes
+    from functools import wraps
+    def spool(*args, **kwargs):
+        def wrapper(*args, **kwargs):
+            pass
+        return wrapper
 
-env = Env()
-env_file = os.path.join(os.path.dirname(__file__), '..', '..', '..', '.env')
-if os.path.exists(env_file):
-    env.read_env(path=env_file)
-else:
-    env.read_env()
+    def empty_func():
+        pass
 
-file_path = os.path.join(os.path.dirname(__file__), '../log/spooler.log')
-logger = logging.getLogger()
-formatter = logging.Formatter('%(asctime)s - %(threadName)s - %(name)s - %(levelname)s - %(message)s')
+    empty_func = spool(empty_func)
 
-console_handler = logging.StreamHandler(sys.stdout)
-console_handler.setFormatter(formatter)
-logger.addHandler(console_handler)
-
-file_handler = logging.FileHandler(file_path)
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
-
-log_level = logging.getLevelName(os.environ.get('DocConverterLogLevel'))
-logger.setLevel(log_level)
-
-logger.info("Spooler Logger Initialized")
+logger = logging.getLogger('spooler')
 
 BASE_ENV = os.environ.copy()
 BASE_ENV['HOME'] = "/tmp"

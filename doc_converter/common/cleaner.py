@@ -1,12 +1,27 @@
 """ Cron job to cleanup temp files """
 import os, logging, time, shutil
-from uwsgidecorators import cron
-from config import UPLOAD_FOLDER, DOWNLOAD_FOLDER
+from doc_converter.config import UPLOAD_FOLDER, DOWNLOAD_FOLDER
+try:
+    from uwsgidecorators import cron #cannot run this in debug mode on local machine, uwsgi must be running
+except:
+    # Creates a null cron decorator for debugging purposes
+    from functools import wraps
+    def cron(*args, **kwargs):
+        def wrapper(*args, **kwargs):
+            pass
+        return wrapper
+
+    def empty_func():
+        pass
+
+    empty_func = cron(empty_func)
 
 cleanup_folders = [
     UPLOAD_FOLDER,
     DOWNLOAD_FOLDER
 ]
+
+logger = logging.getLogger('cleaner')
 
 try:
     logger.info("Cleanup cron job intialized.")

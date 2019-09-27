@@ -1,8 +1,8 @@
 """ Module for passing data to and from api and libreoffice subprocesses on the server """
 from subprocess import Popen, PIPE
 import os, sys, uuid, time
-from spooler.spooler import svg_convert
-from storage.storagewrapper import Blobber
+from doc_converter.spooler.spooler import svg_convert
+from doc_converter.storage.storagewrapper import Blobber
 
 class ProcessMgr:
     """ 

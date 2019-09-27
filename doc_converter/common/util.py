@@ -3,27 +3,27 @@ import logging
 import sys
 import os
 from environs import Env
-import ptvsd
+from logging.config import dictConfig
 
 env = Env()
 env.read_env()
 
-file_path = os.path.join(os.path.dirname(__file__), '../log/doc_converter.log')
-logger = logging.getLogger()
-formatter = logging.Formatter('%(asctime)s - %(threadName)s - %(name)s - %(levelname)s - %(message)s')
+dictConfig({
+    'version': 1,
+    'formatters': {'default': {
+        'format': '[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
+    }},
+    'handlers': {'wsgi': {
+        'class': 'logging.StreamHandler',
+        'formatter': 'default'
+    }},
+    'root': {
+        'level': 'DEBUG',
+        'handlers': ['wsgi']
+    }
+})
 
-console_handler = logging.StreamHandler(sys.stdout)
-console_handler.setFormatter(formatter)
-logger.addHandler(console_handler)
-
-
-file_handler = logging.FileHandler(file_path)
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
-
-log_level = logging.getLevelName(os.environ.get('DocConverterLogLevel'))
-logger.setLevel(log_level)
-
+logger = logging.getLogger('util')
 logger.info("Web App Logger Initialized")
 
 
@@ -36,12 +36,3 @@ def handle_exception(exc_type, exc_value, exc_traceback):
     logger.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
 
 sys.excepthook = handle_exception
-
-if os.environ.get('DocConverterDebug') == True:
-    logger.info("Waiting for debugger attach on {}:{}...".format(os.environ.get('DocConverterServer'), os.environ.get('DocConverterRemoteDebugPort')))
-    ptvsd.enable_attach(address=(os.environ.get('DocConverterServer'), os.environ.get('DocConverterRemoteDebugPort')), redirect_output=True )
-    ptvsd.wait_for_attach()
-    ptvsd.break_into_debugger()
-    logger.info('Debugger attached.  Proceeding startup.')
-    breakpoint()
-    

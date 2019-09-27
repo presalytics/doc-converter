@@ -1,9 +1,11 @@
 """ Wrapper class for communicating with azure blob storage """
 
-import os, uuid
+import os, uuid, logging
 from environs import Env
 from azure.storage.blob import BlockBlobService
-from common.util import logger
+
+logger = logging.getLogger('blobber')
+
 
 env = Env()
 env.read_env()
