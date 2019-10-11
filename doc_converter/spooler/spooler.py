@@ -3,6 +3,7 @@ from environs import Env
 from subprocess import Popen, PIPE, call
 from doc_converter.storage.storagewrapper import Blobber
 from doc_converter.config import UPLOAD_FOLDER, DOWNLOAD_FOLDER
+from doc_converter.spooler.uno_controller import UnoConverter
 try:
     from uwsgidecorators import spool #cannot run this in debug mode on local machine, uwsgi must be running
 except:
@@ -70,6 +71,15 @@ def svg_convert(args):
     blob_name = args['blob_name']
     if blob_name is not None:
         upload_to_blob(blob_name, newfile)
+
+def uno_spooler(args):
+    converter = UnoConverter()
+    converter.open(filename='')
+    if (converter.convert(to_type=ConvertTypes.SVG))
+        blob_name = args['blob_name']
+        if blob_name is not None:
+            upload_to_blob(blob_name, newfile)
+            
 
 
 def strip_scripts(filename):

@@ -100,6 +100,11 @@ const dck8sProcessConfig = {
     env: process.env
 };
 
+gulp.task('doc-converter-update-requirements', async () => {
+    cp.execSync(". venv/bin/activate && pip freeze > requirements.txt", dcprocessConfig)
+});
+
+
 gulp.task('doc-converter-docker-build', async () => {
     cp.execSync("docker build . -t khannegan/chart-a-lot:doc-converter --network=host --no-cache", dcprocessConfig)
 });
@@ -118,6 +123,7 @@ gulp.task('doc-converter-k8s-delete-pod', async ()=> {
 
 gulp.task('doc-converter-redeploy',
     gulp.series(
+        'doc-converter-update-requirements',
         'doc-converter-docker-build',
         'doc-converter-docker-push',
         'doc-converter-k8s-update-config',

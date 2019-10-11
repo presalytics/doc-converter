@@ -1,4 +1,5 @@
 import unittest, os
+from doc_converter.processmgr.convert_types import ConvertTypes
 from doc_converter.spooler.spooler import svg_convert
 
 class SpoolerTest(unittest.TestCase):
@@ -10,4 +11,12 @@ class SpoolerTest(unittest.TestCase):
             pass
 
     def spooler_test(self):
+        args = {
+            'convert_type': ConvertTypes.SVG,
+            'filter': ,
+            'filename': ,
+            'out_dir': ,
+            'out_filename':
+
+        }
         pass
