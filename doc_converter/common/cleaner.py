@@ -21,7 +21,7 @@ cleanup_folders = [
     DOWNLOAD_FOLDER
 ]
 
-logger = logging.getLogger('cleaner')
+logger = logging.getLogger('doc_converter.cleaner')
 
 try:
     logger.info("Cleanup cron job intialized.")

@@ -1,7 +1,7 @@
 """ Module for passing data to and from api and libreoffice subprocesses on the server """
 from subprocess import Popen, PIPE
 import os, sys, uuid, time
-from doc_converter.spooler.spooler import svg_convert
+from doc_converter.spooler.spooler import uno_spooler
 from doc_converter.storage.storagewrapper import Blobber
 
 class ProcessMgr:
@@ -36,21 +36,12 @@ class ProcessMgr:
         """ Determines filetypes from extension and whether it can be converted """
         return '.' in filename and ProcessMgr.get_file_extension(filename) in ProcessMgr.ALLOWED_EXTENSIONS
 
-    def __init__(self, in_filepath, convert_type, out_dir=None, blob_name=None):
+    def __init__(self, in_filepath, convert_type=None, out_dir=None, blob_name=None):
 
         self.in_filepath = in_filepath
         self.convert_type = convert_type
         self.file_extension = ProcessMgr.get_file_extension(in_filepath)
         self.in_filename = ProcessMgr.get_filename(self.in_filepath) + "." + self.file_extension
-        if out_dir is None:
-            self.out_dir = os.path.dirname(in_filepath)
-        else:
-            self.out_dir = out_dir
-        self.build_filter()
-        self.converted = False
-        self.outfile = None
-        self.command = self.build_command()
-        self.create_outfile_name()
         self.blob_name=blob_name
 
     
@@ -139,13 +130,9 @@ class ProcessMgr:
             for aync conversion and post-processing
         """
 
-        svg_convert.spool(
+        uno_spooler.spool(
             {
-                "filename": self.in_filepath,
-                "convert_type": self.convert_type,
-                "filter": self.filter,
-                "out_dir": self.out_dir,
-                "out_filename": self.outfile,
+                "filename": self.in_filename,
                 "blob_name": self.blob_name
             }
         )

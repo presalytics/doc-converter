@@ -13,7 +13,7 @@ from doc_converter.common import cleaner # cron job for temp file cleanup
 
 
 
-logger = logging.getLogger('views')
+logger = logging.getLogger('doc_converter.views')
 
 def view_resolver(operation_id):
     """ returns a view function in this module as function of operation id 
@@ -83,8 +83,6 @@ def svgconvert():
                 try:
                     convert_obj = ProcessMgr(
                         in_filepath=filepath,
-                        convert_type=ConvertTypes.SVG,
-                        out_dir=config.DOWNLOAD_FOLDER,
                         blob_name=blob_name
                     )
                     convert_obj.spool()

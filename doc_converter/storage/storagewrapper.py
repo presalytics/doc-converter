@@ -4,7 +4,7 @@ import os, uuid, logging
 from environs import Env
 from azure.storage.blob import BlockBlobService
 
-logger = logging.getLogger('blobber')
+logger = logging.getLogger('doc_converter.blobber')
 
 
 env = Env()

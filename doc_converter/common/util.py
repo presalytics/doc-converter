@@ -11,19 +11,21 @@ env.read_env()
 dictConfig({
     'version': 1,
     'formatters': {'default': {
-        'format': '[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
+        'format': '%(asctime)s - %(threadName)s - %(name)s - %(levelname)s - %(message)s',
     }},
-    'handlers': {'wsgi': {
-        'class': 'logging.StreamHandler',
-        'formatter': 'default'
-    }},
+    'handlers': {
+        'wsgi': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'default'
+        },
+    },
     'root': {
         'level': 'DEBUG',
         'handlers': ['wsgi']
     }
 })
 
-logger = logging.getLogger('util')
+logger = logging.getLogger('doc_converter.util')
 logger.info("Web App Logger Initialized")
 
 

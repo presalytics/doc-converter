@@ -17,13 +17,15 @@ stderr_logfile=/dev/stderr
 stderr_logfile_maxbytes=0
 
 [program:libreoffice]
-command=/usr/bin/soffice --accept="socket,host=localhost,port=8100;urp;StarOffice.Service" --norestore --nologo --nodefault --headless -env:UserInstallation=file:///tmp/libreoffice
-environment=HOME=/tmp/libreoffice
+command=/usr/bin/soffice --accept="socket,host=localhost,port=8100;urp;StarOffice.Service" --norestore --nologo --nodefault --headless -env:UserInstallation=file:///tmp
+environment=HOME=/tmp
 stdout_logfile=/dev/stdout
 stdout_logfile_maxbytes=0
 stderr_logfile=/dev/stderr
 stderr_logfile_maxbytes=0
 autorestart=true
+
+
 
 
 [unix_http_server]
