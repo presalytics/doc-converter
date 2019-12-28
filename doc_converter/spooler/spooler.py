@@ -1,7 +1,7 @@
 import os, logging, sys, time, shutil
 from environs import Env
 from subprocess import Popen, PIPE, call
-from doc_converter.common.util import dictConfig
+from doc_converter.common.util import dictConfig, strip_scripts
 from doc_converter.storage.storagewrapper import Blobber
 from doc_converter.config import UPLOAD_FOLDER, DOWNLOAD_FOLDER
 from doc_converter.spooler.uno_controller import UnoConverter
@@ -83,40 +83,17 @@ def uno_spooler(args):
     filename = args["filename"]
     try:
         new_svg_path = converter.convert(filename, "svg")
+        new_file = strip_scripts(new_svg_path)
         blob_name = args['blob_name']
         if blob_name is not None:
-            upload_to_blob(blob_name, new_svg_path)
+            upload_to_blob(blob_name, new_file)
 
         logger.info("Spooler request completed.")
 
     except Exception as ex:
         logger.error(ex)
 
-def strip_scripts(filename):
-    """ function to strip javascript out of svg file to reduce filesize.
-        NOTE:  Not implemented.  function works, just need to figure
-        out how to load js library front end.
 
-        TODO: add libreoffice scripts to javascript library so svg
-            files can be displayed without embedded js.
-    """
-    stop = "<script type=".encode('utf-8')
-    temp_filename = filename + ".tmp"
-    with open(filename, encoding='utf-8') as infile, open(temp_filename, 'w', encoding='utf-8') as outfile:
-        buff = []
-        for line in infile:
-            line = line.encode('utf-8')
-            if stop not in line:
-                buff.append(line)
-                continue
-            if stop in line:
-                logger.debug("Stop found")
-                buff.append("</svg>".encode('utf-8'))
-                break
-        outlist = [x.decode('utf-8') for x in buff]
-        outfile.write(''.join(outlist))
-        buff = []
-    os.rename(temp_filename, filename)
 
 def upload_to_blob(blob_name, filename):
     svg_blobber.put_blob(

@@ -1,6 +1,8 @@
-import unittest, os
-from doc_converter.processmgr.convert_types import ConvertTypes
-from doc_converter.spooler.spooler import svg_convert
+import unittest, os, shutil, sys
+top_level = os.path.dirname(os.path.dirname(__file__))
+sys.path.insert(0, top_level)
+import doc_converter
+import doc_converter.common.util
 
 class SpoolerTest(unittest.TestCase):
     def setup(self):
@@ -10,13 +12,14 @@ class SpoolerTest(unittest.TestCase):
         except:
             pass
 
-    def spooler_test(self):
-        args = {
-            'convert_type': ConvertTypes.SVG,
-            'filter': ,
-            'filename': ,
-            'out_dir': ,
-            'out_filename':
-
-        }
+    def test_script_scripts(self):
+        test_file = os.path.join(os.path.dirname(__file__), "files", "test-img.svg")
+        tmp_file = os.path.join(os.path.dirname(__file__), "files", "test-img.svg.tmp")
+        shutil.copyfile(test_file, tmp_file)
+        doc_converter.common.util.strip_scripts(tmp_file)
+        self.assertTrue(os._exists(tmp_file))
+        os.remove(tmp_file)
+        
+    
+    def tearDown(self):
         pass

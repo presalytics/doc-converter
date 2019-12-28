@@ -41,9 +41,14 @@ paths:
           content:
             application/json:
               schema:
-                type: string
+                type: object
                 title: File Url
-                description: url of converted file
+                properties:
+                  blob_name:
+                    type: string
+                  blob_url:
+                    type: string
+
         '400':
           description: Bad Request.
         '415':

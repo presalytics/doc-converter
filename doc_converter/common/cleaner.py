@@ -38,7 +38,12 @@ def cleanup_files(num):
     for fld in cleanup_folders:
         for the_file in os.listdir(fld):
             file_path = os.path.join(fld, the_file)
-            creation_time = os.path.getctime(file_path)
+            try:
+                creation_time = os.path.getctime(file_path)
+            except FileNotFoundError:
+                message = "Skipping cleanup for temp file.  File not found: {0}".format(file_path)
+                logger.error(message)
+                continue
             if (current_time - creation_time) > 1800:
                 try:
                     if os.path.isfile(file_path):

@@ -1,4 +1,4 @@
-import sys, os, logging
+import sys, os, logging, json
 import connexion
 from flask import Flask, request, jsonify, redirect, url_for, send_file, Blueprint
 from werkzeug.utils import secure_filename
@@ -72,6 +72,8 @@ def svgconvert():
             if file and ProcessMgr.allowed_file(file.filename):
                 filename = secure_filename(file.filename)
                 blobber = Blobber()
+                # TODO:  Add auth to this service existing blob can be overridden by 
+                # authorized users
                 blob_name = blobber.allocate_blob()
                 temp_filename = blob_name + "." + ProcessMgr.get_file_extension(filename)
                 filepath = os.path.join(config.UPLOAD_FOLDER, temp_filename)
@@ -87,7 +89,13 @@ def svgconvert():
                     )
                     convert_obj.spool()
                     
-                    return blobber.get_blob_uri(blob_name=blob_name)
+                    ret_dict = {
+                        'blob_name': blob_name,
+                        'blob_url': blobber.get_blob_uri(blob_name=blob_name)
+                    }
+                    ret_json = json.dumps(ret_dict)
+
+                    return ret_dict, 200
                 except IOError as err:
                     logger.exception(err)
                     return redirect(url_for('server_error'))
