@@ -7,19 +7,36 @@ import lxml.etree
 import io
 from environs import Env
 from logging.config import dictConfig
+from wsgi_microservice_middleware import RequestIdFilter, RequestIdJsonLogFormatter
 
 env = Env()
 env.read_env()
 
+if env.bool("DEBUG", False):
+    log_formatter = 'default'
+else:
+    log_formatter = 'json'
+
 dictConfig({
     'version': 1,
-    'formatters': {'default': {
-        'format': '%(asctime)s - %(threadName)s - %(name)s - %(levelname)s - %(message)s',
-    }},
+    'filters': {
+        'request_id_filter' : {
+            '()': RequestIdFilter,
+        }
+    },
+    'formatters': {
+        'default': {
+            'format': '%(asctime)s - %(threadName)s - %(name)s - %(levelname)s - %(request_id)s -  %(message)s',
+        },
+        'json': {
+            "()": RequestIdJsonLogFormatter
+        }
+    },
     'handlers': {
         'wsgi': {
             'class': 'logging.StreamHandler',
-            'formatter': 'default'
+            'formatter': log_formatter,
+            'filters': ['request_id_filter']
         },
     },
     'root': {
@@ -27,7 +44,6 @@ dictConfig({
         'handlers': ['wsgi']
     }
 })
-
 logger = logging.getLogger('doc_converter.util')
 logger.info("Web App Logger Initialized")
 
@@ -60,3 +76,13 @@ def strip_scripts(filename):
     with open(new_filename, 'w') as outfile:
         outfile.write(new_str)
     return new_filename
+
+REDIS_HOST = env.str("REDIS_HOST", "0.0.0.0")
+
+REDIS_PASSWORD = env.str("REDIS_PASSWORD", None)
+
+REDIS_PORT = env.str("REDIS_PORT", "6379")
+
+USE_REDIS = env.bool("USE_REDIS", True)
+
+USE_BLOB = env.bool("USE_BLOB", True)

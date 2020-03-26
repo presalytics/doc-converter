@@ -59,8 +59,7 @@ class Blobber():
         self.connection_string = protocol + account_name + account_key + blob_endpoint
 
 
-
-    def allocate_blob(self):
+    def allocate_blob(self, blob_name = None):
         """
         Reserves a blob with a few bytes of temporary data.
         Allows fast return of blob metadata and permits async/post-process operations
@@ -69,7 +68,9 @@ class Blobber():
         Returns: a blob name string generated via uuid
 
         """
-        blob_name = "svg-" + str(uuid.uuid4())
+        if not blob_name:
+            _id = str(uuid.uuid4())
+            blob_name = "svg-" + _id
         self.service.create_blob_from_text(
             container_name=self.container_name,
             blob_name=blob_name,

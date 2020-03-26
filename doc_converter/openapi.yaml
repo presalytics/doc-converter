@@ -53,17 +53,4 @@ paths:
           description: Bad Request.
         '415':
           description: Invalid file type
-  /:
-    get:
-      description: Test function to get return inforation
-      summary: Says Hello
-      operationId: hello
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                title: Hello
-                type: string
 

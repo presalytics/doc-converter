@@ -1,8 +1,9 @@
 import os, logging, sys, time, shutil
 from environs import Env
 from subprocess import Popen, PIPE, call
-from doc_converter.common.util import dictConfig, strip_scripts
+from doc_converter.common.util import dictConfig, strip_scripts, USE_BLOB, USE_REDIS
 from doc_converter.storage.storagewrapper import Blobber
+from doc_converter.storage.redis_wrapper import RedisWrapper
 from doc_converter.config import UPLOAD_FOLDER, DOWNLOAD_FOLDER
 from doc_converter.spooler.uno_controller import UnoConverter
 
@@ -32,10 +33,19 @@ cleanup_folders = [
     DOWNLOAD_FOLDER
 ]
 
-try:
-    svg_blobber = Blobber()
-except:
-    logger.warning("Connection to Azure storage failed.  Unable to interact with blob storage")
+if USE_BLOB:
+    try:
+        svg_blobber = Blobber()
+    except Exception:
+        logger.warning("Connection to Azure storage failed.  Unable to interact with blob storage")
+
+if USE_REDIS:
+    try:
+        r = RedisWrapper()
+    except Exception:
+        logger.warning("Connection to Redis database failed.  Unable to interact with redis")
+
+
 
 # @spool(pass_arguments=True)
 # def svg_convert(args):
@@ -83,10 +93,13 @@ def uno_spooler(args):
     filename = args["filename"]
     try:
         new_svg_path = converter.convert(filename, "svg")
-        new_file = strip_scripts(new_svg_path)
+        # new_file = strip_scripts(new_svg_path) leaving scripts in for now
         blob_name = args['blob_name']
         if blob_name is not None:
-            upload_to_blob(blob_name, new_file)
+            if USE_REDIS:
+                r.store(new_svg_path, blob_name)
+            if USE_BLOB:
+                upload_to_blob(blob_name, new_svg_path)
 
         logger.info("Spooler request completed.")
 

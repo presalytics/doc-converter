@@ -1,4 +1,4 @@
-import sys, os, logging, json
+import sys, os, logging, json, re, uuid
 import connexion
 from flask import Flask, request, jsonify, redirect, url_for, send_file, Blueprint
 from werkzeug.utils import secure_filename
@@ -8,12 +8,20 @@ from doc_converter.models.invalid_usage import InvalidUsage
 from doc_converter.processmgr.convert_types import ConvertTypes
 from doc_converter.processmgr.processmgr import ProcessMgr
 from doc_converter.storage.storagewrapper import Blobber
+from doc_converter.storage.redis_wrapper import RedisWrapper
 from doc_converter.common import cleaner # cron job for temp file cleanup
 
 
-
-
 logger = logging.getLogger('doc_converter.views')
+
+guid_regex = re.compile(r'[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}')
+
+def extract_guid(input_string):
+    matches = guid_regex.findall(input_string)
+    if len(matches) > 0:
+        return matches[0]
+    else:
+        return None
 
 def view_resolver(operation_id):
     """ returns a view function in this module as function of operation id 
@@ -27,14 +35,14 @@ def view_resolver(operation_id):
     function = globals()[operation_id]
     return function
 
-def hello():
-    """ 
-    test function to  indicate api is communications
+# def hello():
+#     """ 
+#     test function to  indicate api is communications
     
-    Returns: "hello world!"
+#     Returns: "hello world!"
   
-    """
-    return "hello world!"
+#     """
+#     return "hello world!"
 
 
 def invalid_file():
@@ -71,10 +79,12 @@ def svgconvert():
                 return redirect(url_for('invalid_file'))
             if file and ProcessMgr.allowed_file(file.filename):
                 filename = secure_filename(file.filename)
-                blobber = Blobber()
-                # TODO:  Add auth to this service existing blob can be overridden by 
-                # authorized users
-                blob_name = blobber.allocate_blob()
+                _guid = extract_guid(filename)
+                _guid = _guid if _guid else str(uuid.uuid4())
+                blob_name = "svg-" + _guid
+                if util.USE_BLOB:
+                    blobber = Blobber()
+                    blobber.allocate_blob(blob_name=blob_name)
                 temp_filename = blob_name + "." + ProcessMgr.get_file_extension(filename)
                 filepath = os.path.join(config.UPLOAD_FOLDER, temp_filename)
                 try:
@@ -90,10 +100,8 @@ def svgconvert():
                     convert_obj.spool()
                     
                     ret_dict = {
-                        'blob_name': blob_name,
-                        'blob_url': blobber.get_blob_uri(blob_name=blob_name)
+                        'blob_name': blob_name
                     }
-                    ret_json = json.dumps(ret_dict)
 
                     return ret_dict, 200
                 except IOError as err:
