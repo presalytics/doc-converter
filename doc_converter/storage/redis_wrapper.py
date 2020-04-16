@@ -22,7 +22,7 @@ class RedisWrapper(object):
             logger.error("Redis Failed to Connect.  If you intent to run this application without redis, please set the USE_REDIS environment variable to False.")
 
     def store(self, filepath, blob_name):
-        with open(filepath, 'r') as f:
+        with open(filepath, 'r', encoding='utf-8') as f:
             data = f.read()
         success = self.r.set(blob_name, data, ex=self.default_expire_time)
         if not success:

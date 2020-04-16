@@ -97,14 +97,18 @@ def uno_spooler(args):
         blob_name = args['blob_name']
         if blob_name is not None:
             if USE_REDIS:
-                r.store(new_svg_path, blob_name)
+                try:
+                    r.store(new_svg_path, blob_name)
+                except Exception as ex:
+                    logger.exception(ex)
             if USE_BLOB:
-                upload_to_blob(blob_name, new_svg_path)
-
+                try:
+                    upload_to_blob(blob_name, new_svg_path)
+                except Exception as ex:
+                    logger.exception(ex)
         logger.info("Spooler request completed.")
-
     except Exception as ex:
-        logger.error(ex)
+        logger.exception(ex)
 
 
 

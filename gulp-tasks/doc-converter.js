@@ -121,12 +121,16 @@ gulp.task('doc-converter-k8s-delete-pod', async ()=> {
     cp.execSync("kubectl delete pod -n api -l app=doc-converter", dck8sProcessConfig)
 });
 
+gulp.task('doc-converter-rollout', async ()=> {
+    cp.execSync("kubectl rollout restart -n api deployment/doc-converter", dck8sProcessConfig)
+});
+
 gulp.task('doc-converter-redeploy',
     gulp.series(
         'doc-converter-update-requirements',
         'doc-converter-docker-build',
         'doc-converter-docker-push',
         'doc-converter-k8s-update-config',
-        'doc-converter-k8s-delete-pod'
+        'doc-converter-rollout'
     )
 );

@@ -1,20 +1,22 @@
-import sys, os, logging, json, re, uuid
-import connexion
-from flask import Flask, request, jsonify, redirect, url_for, send_file, Blueprint
+import os 
+import logging 
+import re 
+import uuid
+from flask import request, redirect, url_for
 from werkzeug.utils import secure_filename
 from doc_converter import config
-from doc_converter.common import util# Loads static functions for module, constansts and an environment variables, should be 1st import
+from doc_converter.common import util  # Loads static functions for module, constansts and an environment variables, should be 1st import
 from doc_converter.models.invalid_usage import InvalidUsage
-from doc_converter.processmgr.convert_types import ConvertTypes
 from doc_converter.processmgr.processmgr import ProcessMgr
 from doc_converter.storage.storagewrapper import Blobber
-from doc_converter.storage.redis_wrapper import RedisWrapper
-from doc_converter.common import cleaner # cron job for temp file cleanup
+from doc_converter.common import cleaner  # cron job for temp file cleanup
 
 
 logger = logging.getLogger('doc_converter.views')
 
+
 guid_regex = re.compile(r'[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}')
+
 
 def extract_guid(input_string):
     matches = guid_regex.findall(input_string)
@@ -30,7 +32,7 @@ def view_resolver(operation_id):
     """
     try:
         name = operation_id.rsplit('.', 1)[1]
-    except:
+    except Exception:
         name = operation_id
     function = globals()[operation_id]
     return function
@@ -69,7 +71,7 @@ def svgconvert():
     """ 
     Converts the uploaded file to an svg file. 
     """
-    try: 
+    try:
         if request.method == 'POST':
             if 'file' not in request.files:
                 logger.debug("Malformed request: file not included in post data")
@@ -89,7 +91,7 @@ def svgconvert():
                 filepath = os.path.join(config.UPLOAD_FOLDER, temp_filename)
                 try:
                     os.remove(filepath)
-                except:
+                except Exception:
                     pass
                 file.save(filepath)
                 try:
@@ -114,7 +116,6 @@ def svgconvert():
     except Exception as err:
         logger.exception(err)
         return redirect(url_for('bad_request'))
-    else:
-        return redirect(url_for('bad_request'))
+
 
 
