@@ -1,0 +1,17 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: doc-converter
+  namespace: api
+  labels:
+    app: doc-converter
+    env: dev
+    api: doc-converter
+spec:
+  selector:
+    app: doc-converter
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 5002
+    name: http
