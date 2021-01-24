@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: doc-converter
+  namespace: api
+  labels:
+    app: doc-converter
+    env: dev
+    api: doc-converter
+spec:
+  selector:
+    matchLabels:
+      app: doc-converter      
+  replicas: 3
+  template:
+    metadata:
+      name: doc-converter
+      namespace: api
+      labels:
+        app: doc-converter
+    spec:  
+      containers:
+      - name: doc-converter
+        image: presalytics/doc-converter
+        imagePullPolicy: Always
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "2Gi"
+            cpu: "500m"
+        ports:
+          - containerPort: 5002
+        env:
+        - name: DocConverterLogLevel
+          value: INFO
+        - name: DocConverterDebug
+          value: "False"
+        - name: Azure__BlobEndpoint
+          valueFrom:
+            secretKeyRef:
+              name: azure-config
+              key: host
+        - name: Azure__AccountName
+          valueFrom:
+            secretKeyRef:
+              name: azure-config
+              key: account
+        - name: Azure__AccountKey
+          valueFrom:
+            secretKeyRef:
+              name: azure-config
+              key: key
+        - name: Azure__BlobContainers__Svgs
+          valueFrom:
+            secretKeyRef:
+              name: azure-config
+              key: svg-container
+        - name: Azure__IsEmulated
+          valueFrom:
+            secretKeyRef:
+              name: azure-config
+              key: use-emulator
+        - name: REDIS_HOST
+          value: redis.api.svc.cluster.local
+        - name: REDIS_PORT
+          value: "6379"
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: redis-config
+              key: password
+        
+      imagePullSecrets:
+      - name: chartalot-docker-registry
+
+        # resources:
+        #   limits:
+        #     memory: "8Gi"
+        #     cpu: "500m"
+      
