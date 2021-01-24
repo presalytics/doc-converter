@@ -1,0 +1,36 @@
+# On Push, this workflow will: 
+# 1. Setup Python
+# 2. Install dependencies
+# 3. Run linter with versions of python starting with 3.6
+# 4. Run unit tests
+
+name: Code Quality & Unit Tests
+on:
+  # Lint and test
+  push:
+    branches: [ #to be added ]  # [master]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.6", "3.7", "3.8"]    
+    steps:
+    - uses: actions/checkout@master
+    - name: Build using Python ${{ matrix.python-version }}
+      uses: actions/setup-python@master
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies [pip]
+      run: |
+        python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - name: Run linter [mypy, flake8]
+      run: |
+        python -m mypy -p doc-converter
+        python -m flake8
+    # - name: Run unit tests
+    #  run: |
+    #    python test.py
