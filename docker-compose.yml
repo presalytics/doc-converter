@@ -1,0 +1,8 @@
+version: '3.4'
+
+services:
+  docconverter:
+    image: docconverter
+    build:
+      context: .
+      dockerfile: ./Dockerfile

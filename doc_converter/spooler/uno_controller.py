@@ -1,12 +1,13 @@
-import os, logging, sys
+import os, logging, sys, time
 from os.path import basename, join as pathjoin, splitext
 from subprocess import Popen
 import psutil
 # python3 must be running as root ("sudo python3") in order to bind to soffice.bin proces.
 # otherwiese import uno will fail as 'Cannot import Element'
-import uno
-import unohelper
-import pyuno
+# to simplify, always debug this module inside a built docker container
+import uno  # type: ignore
+import unohelper  # type: ignore
+import pyuno  # type: ignore
 import unotools
 
 
@@ -29,8 +30,10 @@ class UnoConverter(object):
                 stdin=None, 
                 stdout=None, 
                 stderr=None, 
-                close_fds=True
+                close_fds=True,
+                shell=True
             )
+            time.sleep(1)
         self.context = connect(Socket("localhost", "8100"))
         self.output_dir = output_dir
         if self.output_dir is None:

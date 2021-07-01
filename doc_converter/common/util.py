@@ -4,7 +4,6 @@ import sys
 import os
 import lxml
 import lxml.etree
-import io
 from environs import Env
 from logging.config import dictConfig
 from wsgi_microservice_middleware import RequestIdFilter, RequestIdJsonLogFormatter
@@ -17,7 +16,7 @@ if env.bool("DEBUG", False):
 else:
     log_formatter = 'json'
 
-dictConfig({
+logger_settings = {
     'version': 1,
     'filters': {
         'request_id_filter' : {
@@ -43,7 +42,9 @@ dictConfig({
         'level': 'DEBUG',
         'handlers': ['wsgi']
     }
-})
+}
+
+dictConfig(logger_settings)
 logger = logging.getLogger('doc_converter.util')
 logger.info("Web App Logger Initialized")
 
@@ -86,3 +87,5 @@ REDIS_PORT = env.str("REDIS_PORT", "6379")
 USE_REDIS = env.bool("USE_REDIS", True)
 
 USE_BLOB = env.bool("USE_BLOB", True)
+
+CACHE_EXPIRY_SECONDS = env.int("CACHE_EXPIRY_SECONDS", 300)

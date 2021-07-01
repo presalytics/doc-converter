@@ -1,0 +1,102 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "clear-containers",
+            "type": "shell",
+            "command": "docker stop dc_debug && docker rm dc_debug"
+        },
+        {
+            "type": "docker-build",
+            "label": "docker-build",
+            "platform": "python",
+            "dockerBuild": {
+                "tag": "presalytics/doc_converter",
+                "dockerfile": "${workspaceFolder}/Dockerfile",
+                "context": "${workspaceFolder}",
+                "pull": true
+            }
+        },
+        {
+            "type": "docker-run",
+            "label": "docker-run: debug-api",
+            "dependsOn": [
+                "docker-build"
+            ],
+            "python": {
+                "file": "run.py"
+            },
+            "dockerRun": {
+                "containerName": "dc_debug",
+                "envFiles": [
+                    "${workspaceFolder}/.env"
+                ],
+                "image": "presalytics/doc_converter",
+                "ports": [
+                    {
+                        "containerPort": 8080,
+                        "hostPort": 8080
+                    },
+                    {
+                        "containerPort": 5678,
+                        "hostPort": 5678
+                    }
+                ],
+                "extraHosts": [
+                    {
+                        "hostname": "debug.presalytics.io",
+                        "ip": "0.0.0.0"
+                    }
+                ]
+            }
+        },
+        {
+            "type": "docker-run",
+            "label": "docker-run: debug-worker",
+            "dependsOn": [
+                "docker-build"
+            ],
+            "python": {
+                "args": [
+                    "-A",
+                    "doc_converter.celery.celery_app",
+                    "worker",
+                    "--loglevel=DEBUG"
+                ],
+                "module": "celery"
+            },
+            "dockerRun": {
+                "containerName": "dc_debug",
+                "envFiles": [
+                    "${workspaceFolder}/.env"
+                ],
+                "image": "presalytics/doc_converter"
+            }
+        },
+        {
+            "label": "docker-compose-debug",
+            "type": "docker-compose",
+            "dockerCompose": {
+                "up": {
+                    "detached": true,
+                    "build": false
+                },
+                "files": [
+                    "${workspaceFolder}/docker-compose.debug.yml"
+                ]
+            },
+            "dependsOn": [
+                "docker-build",
+                "down-docker-compose"
+            ]
+        },
+        {
+            "label": "down-docker-compose",
+            "type": "shell",
+            "command": "docker compose down --remove-orphans",
+            "problemMatcher": []
+        },
+    ]
+}

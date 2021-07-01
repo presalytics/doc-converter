@@ -1,7 +1,8 @@
 FROM khannegan/chart-a-lot:libreoffice-python
 
 # when supervisord for python3 (supervisor v4+) gets installed in the pip package direcotry, install supervisor with requirements.txt.  Temporaliyt install from source
-ADD ./load-files/requirements.txt .
+ADD ./requirements.txt .
+RUN pip3 install -U pip
 RUN pip3 install -r requirements.txt \
     && mkdir /var/log/uwsgi
 
@@ -20,6 +21,8 @@ RUN ln -s /etc/nginx/sites-available/nginx.conf /etc/nginx/sites-enabled \
     && chown -R www-data:www-data ./doc_converter/log /tmp/uploads /tmp/downloads /tmp/svgspool ./doc_converter/docs /var/www /srv/doc_converter \
     && chmod -R 777 /tmp /var/www /srv
 
-EXPOSE 5002
+EXPOSE 8080
+EXPOSE 5678
+EXPOSE 5679
 
 CMD [ "supervisord" ]

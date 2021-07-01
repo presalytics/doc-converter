@@ -39,13 +39,6 @@ if USE_BLOB:
     except Exception:
         logger.warning("Connection to Azure storage failed.  Unable to interact with blob storage")
 
-if USE_REDIS:
-    try:
-        r = RedisWrapper()
-    except Exception:
-        logger.warning("Connection to Redis database failed.  Unable to interact with redis")
-
-
 
 # @spool(pass_arguments=True)
 # def svg_convert(args):
@@ -97,6 +90,7 @@ def uno_spooler(args):
         blob_name = args['blob_name']
         if blob_name is not None:
             if USE_REDIS:
+                r = RedisWrapper.get_redis()
                 try:
                     r.store(new_svg_path, blob_name)
                 except Exception as ex:
@@ -110,6 +104,19 @@ def uno_spooler(args):
     except Exception as ex:
         logger.exception(ex)
 
+@spool(pass_arguments=True)
+def png_spooler(args):
+    logger.debug("Png spooler request received")
+    converter = UnoConverter(input_dir=UPLOAD_FOLDER, output_dir=DOWNLOAD_FOLDER)
+    filename = args["filename"]
+    try:
+        redis_key = args["redis_key"]
+        fpath = converter.convert(filename, "png")
+        r = RedisWrapper.get_redis()
+        r.store(fpath, redis_key)
+        logger.debug("Png spooler request completed")
+    except Exception as ex:
+        logger.exception(ex)
 
 
 def upload_to_blob(blob_name, filename):

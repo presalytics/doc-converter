@@ -1,15 +1,18 @@
 import os 
 import logging 
-import re 
+import re
+import io
 import uuid
-from flask import request, redirect, url_for
+from flask import request, redirect, url_for, send_file
 from werkzeug.utils import secure_filename
 from doc_converter import config
 from doc_converter.common import util  # Loads static functions for module, constansts and an environment variables, should be 1st import
 from doc_converter.models.invalid_usage import InvalidUsage
 from doc_converter.processmgr.processmgr import ProcessMgr
 from doc_converter.storage.storagewrapper import Blobber
+from doc_converter.storage.redis_wrapper import RedisWrapper
 from doc_converter.common import cleaner  # cron job for temp file cleanup
+from doc_converter.celery import png_task
 
 
 logger = logging.getLogger('doc_converter.views')
@@ -117,5 +120,54 @@ def svgconvert():
         logger.exception(err)
         return redirect(url_for('bad_request'))
 
+
+def pngconvert():
+    try:
+        if request.method == 'POST':
+            if 'file' not in request.files:
+                logger.debug("Malformed request: file not included in post data")
+                return redirect(url_for('bad_request'))
+            file = request.files['file']
+            if file.filename == '':
+                return redirect(url_for('invalid_file'))
+            if file and ProcessMgr.allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                file_extension = ProcessMgr.get_file_extension(filename)
+                _guid = extract_guid(filename) or str(uuid.uuid4())
+                redis_key = "png-" + _guid
+                r = RedisWrapper.get_redis()
+                r._redis.set(redis_key, b'\x00')
+                file.stream.seek(0)
+                r._redis.set(redis_key + '-file', file.stream.read())
+                png_task.delay(redis_key, file_extension, "png")
+                ret_dict = {
+                    "cacheKey": redis_key,
+                    "status": "processing",
+                    "url": request.host_url + "doc-converter/pngconvert/" + redis_key
+                }
+                return ret_dict, 200
+    except IOError as err:
+        logger.exception(err)
+        return redirect(url_for('server_error'))
+    except Exception as ex:
+        logger.exception(ex)
+
+
+def png_get(id):
+    if request.method == 'GET':
+        r = RedisWrapper.get_redis()
+        file_content = r._redis.get(id)
+        if file_content == b'\x00':
+            ret_dict = {
+                "cacheKey": id,
+                "status": "processing",
+                "url": "/pngconvert/" + id
+            }
+            return ret_dict, 202
+        elif not file_content:
+            return None, 404
+        fname = id + ".png"
+        return send_file(io.BytesIO(file_content), mimetype='image/png', attachment_filename=fname), 200
+    return redirect(url_for('bad_request')) 
 
 
