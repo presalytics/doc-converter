@@ -2,24 +2,43 @@ import os, logging, sys, time
 from os.path import basename, join as pathjoin, splitext
 from subprocess import Popen
 import psutil
-# python3 must be running as root ("sudo python3") in order to bind to soffice.bin proces.
-# otherwiese import uno will fail as 'Cannot import Element'
-# to simplify, always debug this module inside a built docker container
-import uno  # type: ignore
-import unohelper  # type: ignore
-import pyuno  # type: ignore
-import unotools
 
 
-from unotools import Socket, connect
-from unotools.component.calc import Calc
-from unotools.component.writer import Writer
-from unotools.unohelper import convert_path_to_url
-from unotools.unohelper import LoadingComponentBase
+logger = logging.getLogger(__name__)
 
-logger = logging.getLogger('doc_converter.uno_controller')
 
-        
+try:
+    # python3 must be running as root ("sudo python3") in order to bind to soffice.bin proces.
+    # otherwiese import uno will fail as 'Cannot import Element'
+    # to simplify, always debug this module inside a built docker container
+    import uno  # type: ignore
+    import unohelper  # type: ignore
+    import pyuno  # type: ignore
+
+    from unotools import Socket, connect
+    from unotools.component.calc import Calc
+    from unotools.component.writer import Writer
+    from unotools.unohelper import convert_path_to_url
+    from unotools.unohelper import LoadingComponentBase
+except (ImportError, ModuleNotFoundError):
+    msg = """
+
+    -------------------------------------------------------------
+    Uno apis are unavailable.
+
+    Application is running in API-only mode.
+
+    Any attempt at document conversion on this process will fail.
+    Please ensure a companion worker process is running before
+    doing any document conversion
+    -------------------------------------------------------------
+    """
+    logger.info(msg)
+
+    class LoadingComponentBase(object):
+        """Dummy class"""
+        pass
+
 class Impress(LoadingComponentBase):
     URL = 'private:factory/simpress'
 
@@ -69,7 +88,27 @@ class UnoConverter(object):
         out_url = convert_path_to_url(out_filename)
         component.store_to_url(out_url, 'FilterName', export_filter)
         component.close(True)
+        self.wait_for_completion(out_filename)
         return out_filename
+
+    def wait_for_completion(self, out_filename):
+        occupied = True
+        while occupied:
+            occupied = self.has_handle(out_filename)
+            if occupied:
+                time.sleep(0.1)
+
+    def has_handle(self, fpath):
+        for proc in psutil.process_iter():
+            try:
+                for item in proc.open_files():
+                    if fpath == item.path:
+                        return True
+            except Exception:
+                pass
+
+        return False
+
 
     COMPONENT_MAP = {
         "Writer" : {

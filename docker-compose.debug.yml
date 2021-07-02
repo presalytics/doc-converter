@@ -2,25 +2,27 @@ version: '3.4'
 
 services:
   api:
-    image: presalytics/doc_converter
+    image: presalytics/doc_converter_api
     build:
       context: .
-      dockerfile: ./Dockerfile
-    command: ["sh", "-c", "pip3 install debugpy -t /tmp && python3 /tmp/debugpy --wait-for-client --listen 0.0.0.0:5678 run.py "]
+      dockerfile: ./api.dockerfile
+    env_file: ./.env
+    command: ["sh", "-c", "pip3 install debugpy -t /tmp && python3 /tmp/debugpy --wait-for-client --listen 0.0.0.0:5678 main.py "]
     ports:
       - 5678:5678
       - 8080:8080
     env_file: ./.env
   worker:
-    image: presalytics/doc_converter
+    image: presalytics/doc_converter_worker
     build:
       context: .
-      dockerfile: ./Dockerfile
+      dockerfile: ./worker.dockerfile
     env_file: ./.env
     ports:
       - 5679:5679
-    command: ["sh", "-c", "pip3 install debugpy -t /tmp && python3 /tmp/debugpy --wait-for-client --listen 0.0.0.0:5679 -m celery -A doc_converter.celery.celery_app worker --loglevel=DEBUG"]
+    command: ["sh", "-c", "pip3 install debugpy -t /tmp && python3 /tmp/debugpy --wait-for-client --listen 0.0.0.0:5679 -m celery -A doc_converter.celery.celery_app worker --loglevel=DEBUG -P solo"]
   redis:
-    image: redis
+    image: redis:latest
     ports:
       - 6379:6379
+    command: redis-server --requirepass Password@1

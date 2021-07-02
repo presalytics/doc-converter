@@ -4,7 +4,7 @@ import json
 import presalytics
 import datetime
 import typing
-from doc_converter.common.util import CACHE_EXPIRY_SECONDS, REDIS_HOST, REDIS_PASSWORD, REDIS_PORT
+from doc_converter.util import CACHE_EXPIRY_SECONDS, REDIS_HOST, REDIS_PASSWORD, REDIS_PORT
 
 
 logger = logging.getLogger(__name__)

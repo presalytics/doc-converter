@@ -10,69 +10,25 @@
         },
         {
             "type": "docker-build",
-            "label": "docker-build",
+            "label": "api-docker-build",
             "platform": "python",
             "dockerBuild": {
-                "tag": "presalytics/doc_converter",
-                "dockerfile": "${workspaceFolder}/Dockerfile",
+                "tag": "presalytics/doc_converter_api",
+                "dockerfile": "${workspaceFolder}/api.dockerfile",
                 "context": "${workspaceFolder}",
                 "pull": true
             }
         },
+        
         {
-            "type": "docker-run",
-            "label": "docker-run: debug-api",
-            "dependsOn": [
-                "docker-build"
-            ],
-            "python": {
-                "file": "run.py"
-            },
-            "dockerRun": {
-                "containerName": "dc_debug",
-                "envFiles": [
-                    "${workspaceFolder}/.env"
-                ],
-                "image": "presalytics/doc_converter",
-                "ports": [
-                    {
-                        "containerPort": 8080,
-                        "hostPort": 8080
-                    },
-                    {
-                        "containerPort": 5678,
-                        "hostPort": 5678
-                    }
-                ],
-                "extraHosts": [
-                    {
-                        "hostname": "debug.presalytics.io",
-                        "ip": "0.0.0.0"
-                    }
-                ]
-            }
-        },
-        {
-            "type": "docker-run",
-            "label": "docker-run: debug-worker",
-            "dependsOn": [
-                "docker-build"
-            ],
-            "python": {
-                "args": [
-                    "-A",
-                    "doc_converter.celery.celery_app",
-                    "worker",
-                    "--loglevel=DEBUG"
-                ],
-                "module": "celery"
-            },
-            "dockerRun": {
-                "containerName": "dc_debug",
-                "envFiles": [
-                    "${workspaceFolder}/.env"
-                ],
-                "image": "presalytics/doc_converter"
+            "type": "docker-build",
+            "label": "worker-docker-build",
+            "platform": "python",
+            "dockerBuild": {
+                "tag": "presalytics/doc_converter_worker",
+                "dockerfile": "${workspaceFolder}/worker.dockerfile",
+                "context": "${workspaceFolder}",
+                "pull": true
             }
         },
         {
@@ -88,8 +44,9 @@
                 ]
             },
             "dependsOn": [
-                "docker-build",
-                "down-docker-compose"
+                "down-docker-compose",
+                "worker-docker-build",
+                "api-docker-build"
             ]
         },
         {

@@ -1,13 +1,16 @@
 """ Module for passing data to and from api and libreoffice subprocesses on the server """
-from subprocess import Popen, PIPE
-import os, sys, uuid, time
-from doc_converter.spooler.spooler import uno_spooler, png_spooler
-from doc_converter.storage.storagewrapper import Blobber
-from doc_converter.celery import png_task
+import os, sys, uuid, time, re, pickle, subprocess, logging
+from fastapi import UploadFile
+from doc_converter.processmgr.redis_wrapper import RedisWrapper
+from doc_converter.processmgr.uno_controller import UnoConverter
+from doc_converter.util import TEMP_FOLDER
 
-class ProcessMgr:
+logger = logging.getLogger(__name__)
+
+
+class ProcessMgr(object):
     """ 
-    Container class for managing interface between flask and libreoffice subprocesses
+    Container class for managing interface between api and worker subprocesses
     
     Arguments:
         in_filepath {str} -- file to be convertered
@@ -37,14 +40,33 @@ class ProcessMgr:
         """ Determines filetypes from extension and whether it can be converted """
         return '.' in filename and ProcessMgr.get_file_extension(filename) in ProcessMgr.ALLOWED_EXTENSIONS
 
-    def __init__(self, in_filepath, convert_type=None, out_dir=None, blob_name=None, redis_key=None):
+    class ConvertTypes:
+        "Conversion type options for processmgr"
+        SVG = "svg"
+        PNG = "png"
+        JPG = "jpg"
 
-        self.in_filepath = in_filepath
+
+    guid_regex = re.compile(r'[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}')
+
+    @staticmethod
+    def extract_guid(input_string):
+        matches = ProcessMgr.guid_regex.findall(input_string)
+        if len(matches) > 0:
+            return matches[0]
+        else:
+            return None
+
+
+
+    def __init__(self, file: bytes, filename: str, convert_type: str):
+
+        self.file = file
         self.convert_type = convert_type
-        self.file_extension = ProcessMgr.get_file_extension(in_filepath)
-        self.in_filename = ProcessMgr.get_filename(self.in_filepath) + "." + self.file_extension
-        self.blob_name = blob_name
-        self.redis_key = redis_key
+        self.file_extension = ProcessMgr.get_file_extension(filename)
+        self.redis_key = self.extract_guid(filename) or str(uuid.uuid4())
+        self.temp_filename = os.path.join(TEMP_FOLDER, self.redis_key + "." + self.file_extension)
+        self.converted = False
 
     
     """ Maps file extensions to filter data """
@@ -61,36 +83,6 @@ class ProcessMgr:
         "odg" : ["visio", "draw"]
     }
     
-
-
-    def build_filter(self):
-        """ builds the libreoffice 'filter' for commmand line file conversion """
-        program = ProcessMgr.extension_map[self.file_extension][1]
-        export = "{}_{}_Export".format(program, self.convert_type)
-        self.filter = export
-    
-    def build_command(self):
-        command = [
-            "soffice",
-            "--invisible",
-            "--convert-to",
-            "{}:{}".format(self.convert_type, self.filter),
-            self.in_filepath,
-            "--outdir",
-            self.out_dir
-        ]
-        # commentted out command obsolete, should work with subprocess.call where shell=True (security risk)
-        # command = "soffice --headless --invisible --convert-to {}:{} {} --outdir {}".format(
-        #     self.convert_type,
-        #     self.filter,
-        #     self.in_filepath,
-        #     self.out_dir
-        # )
-        return command
-
-    def check_command(self):
-        return self.command
-    
     def create_outfile_name(self):
         """Generates the filename of the returned file after
         libreoffice has completed file conversion
@@ -99,69 +91,75 @@ class ProcessMgr:
             string -- file path to converted file (assuming file has been converted)
         """
 
-        self.outfile = os.path.join(self.out_dir, ProcessMgr.get_filename(self.in_filepath) + '.' + self.convert_type)
+        self.outfile = os.path.join(TEMP_FOLDER, self.redis_key + "." + self.convert_type)
         return self.outfile
 
     def convert(self):
         """ Converts a file using the libreoffice command line interface.  The converted filename is output. """
-        self.create_outfile_name()
         try:
-            os.remove(self.outfile)
-        except:
-            pass
-        p = Popen(self.command, stdout=PIPE, stderr=PIPE, bufsize=-1, close_fds=True)
-        output, err = p.communicate()
-        rc = p.returncode
-        if rc == 0:
+            self.prep_conversion()
+            converter = UnoConverter(input_dir=TEMP_FOLDER, output_dir=TEMP_FOLDER)
+            converter.convert(self.temp_filename, self.convert_type)
             if os.path.exists(self.outfile):
                 self.converted = True
+                self.cache()
+                self.teardown()
                 return self.outfile
             else:
                 raise IOError("Document conversion failed")
-                # raise IOError([
-                #     "Conversion of {} to {} failed.  Check file format.".format(self.in_filepath, self.convert_type),
-                #     "exit code: {}".format(rc),
-                #     "stdout: {}".format(str(output, 'utf-8')),
-                #     "stderr: {}".format(str(err, 'utf-8')) #last line of thrown exception
-                # ])
-        else:
-            raise IOError("Conversion process exited with code {}.  Likely File Error.  Check for corrupted input file.".format(rc))
+        except Exception as ex:
+            logger.exception(ex)
+            raise IOError("Document conversion failed")
 
-    def spool(self):
-        """ Pushes convert information to uwsgi spooler
-            for aync conversion and post-processing
-        """
-
-        uno_spooler.spool(
-            {
-                "filename": self.in_filename,
-                "blob_name": self.blob_name
-            }
-        )
+    def serialize(self):
+        return pickle.dumps(self)
     
-    def png_spool(self):
-        png_task.delay(self.in_filename, self.redis_key)
+    @classmethod
+    def deserailize(cls, pickle_data: bytes):
+        return pickle.loads(pickle_data)
 
-    def wait_for_completion(self):
-        """Waits for file conversion to complete allowing for 
-        synchronous operations for file conversion.
+    def prep_conversion(self):
+        self.create_outfile_name()
+        self.teardown()
+        with open(self.temp_filename, 'wb+') as f:
+            f.write(self.file)
         
-        Returns:
-            Boolean -- returns True when file has converteed
-                returns false on a timeout error
 
-        """
+    def teardown(self):
+        try:
+            os.remove(self.temp_filename)
+        except Exception:
+            pass
+        try:
+            os.remove(self.outfile)
+        except Exception:
+            pass
+        if self.converted:
+            r = RedisWrapper.get_redis()
+            r._redis.delete(self.redis_key)
 
-        start_time = time.time()
-        while not self.converted:
-            if os.path.exists(self.outfile):
-                self.converted = True
-                return True
-            else:
-                timer = time.time() - start_time
-                if timer > ProcessMgr.TIMEOUT_TIME:
-                    return False
-                time.sleep(0.1)
+    def cache(self):
+        r = RedisWrapper.get_redis()
+        r.store(self.outfile, self.get_converted_file_key())
 
+    @classmethod
+    def from_upload_file(cls, file: UploadFile, convert_type: str):
+        return cls(file.file.read(), file.filename, convert_type)
+
+    def handoff_to_worker(self):
+        from doc_converter.celery import convert_task
+        r = RedisWrapper.get_redis()
+        r._redis.set(self.redis_key, self.serialize())
+        convert_task.delay(self.redis_key)
+
+    def reserve_cache_key(self):
+        r = RedisWrapper.get_redis()
+        r._redis.set(self.get_converted_file_key(), b'\x00')
+
+    def get_converted_file_key(self):
+        return self.convert_type + "-" + self.redis_key
+
+
+        
 
 

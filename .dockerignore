@@ -1,0 +1,11 @@
+/venv
+docker-compose.debug.yml
+docker-compose.yml
+readme.md
+tmp.png
+.gitignore
+/.git
+/test
+/.vscode
+/out
+

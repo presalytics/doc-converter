@@ -89,3 +89,7 @@ USE_REDIS = env.bool("USE_REDIS", True)
 USE_BLOB = env.bool("USE_BLOB", True)
 
 CACHE_EXPIRY_SECONDS = env.int("CACHE_EXPIRY_SECONDS", 300)
+
+ROOT_PATH = env.str("ROOT_PATH", None)
+
+TEMP_FOLDER = '/tmp/convert'

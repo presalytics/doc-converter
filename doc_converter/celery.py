@@ -1,22 +1,16 @@
-import logging
-import os
+import logging, os
+from doc_converter.processmgr.processmgr import ProcessMgr
+from doc_converter.processmgr.redis_wrapper import RedisWrapper
+from doc_converter import util
 from celery import Celery
-from celery.app import autoretry
 from celery.signals import setup_logging
-from doc_converter.spooler.uno_controller import UnoConverter
-from doc_converter.common.util import (
-    REDIS_HOST, 
-    REDIS_PASSWORD, 
-    REDIS_PORT,
-)
-from doc_converter.config import UPLOAD_FOLDER, DOWNLOAD_FOLDER
-from unotools.errors import ConnectionError
-
+from celery.utils.log import get_task_logger
 
 
 logger = logging.getLogger(__name__)
 
-CELERY_BROKER_URL = 'redis://:{0}@{1}:{2}/0'.format(REDIS_PASSWORD, REDIS_HOST, REDIS_PORT)
+
+CELERY_BROKER_URL = 'redis://:{0}@{1}:{2}/0'.format(util.REDIS_PASSWORD, util.REDIS_HOST, util.REDIS_PORT)
 
 
 celery_app = Celery()
@@ -25,34 +19,19 @@ celery_app.conf.broker_url = CELERY_BROKER_URL
 @setup_logging.connect
 def config_loggers(*args, **kwargs):
     from logging.config import dictConfig
-    from doc_converter.common.util import logger_settings
+    from doc_converter.util import logger_settings
     dictConfig(logger_settings)
 
-@celery_app.task(autoretry_for=(ConnectionError,))
-def png_task(redis_key, file_extension, convert_type):
-    from doc_converter.processmgr.processmgr import ProcessMgr
-    from doc_converter.storage.redis_wrapper import RedisWrapper
-    try:
-        logger.debug("Png spooler request received")
-        temp_filename = redis_key + "." + file_extension
-        filepath = os.path.join(UPLOAD_FOLDER, temp_filename)
-        r = RedisWrapper.get_redis()
-        try:
-            os.remove(filepath)
-        except Exception:
-            pass
-        with open(filepath, 'wb+') as f:
-            f.write(r._redis.get(redis_key + '-file'))
-        converter = UnoConverter(input_dir=UPLOAD_FOLDER, output_dir=DOWNLOAD_FOLDER)
-    
-        fpath = converter.convert(filepath, convert_type)
-        r.store(fpath, redis_key)
-        os.remove(filepath)
-        logger.debug("Png spooler request completed")
-    except Exception as ex:
-        logger.exception(ex)
 
-@celery_app.task
-def svg_task(**kwargs):
-    logger.info('Task "svg_task" reserved for future use.')
+@celery_app.task(autoretry_for=(Exception,))
+def convert_task(redis_key):
+    try:
+        r = RedisWrapper.get_redis()
+        pickle_data = r._redis.get(redis_key)
+        process_mgr = ProcessMgr.deserailize(pickle_data)
+        process_mgr.convert()
+    except Exception as ex:
+        task_logger = get_task_logger(__name__)
+        task_logger.exception(ex)
+        raise ex
 
