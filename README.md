@@ -53,7 +53,7 @@ You can attach your debugger using the `debugpy` package or by launch the `api-d
 
 This project's code linted using the mypy and flake8 linters. Ensure to install the required mypy types with the command `mypy --intall-types` from your virtual environment.
 
-### About this project
+## About this project
 
 This project was created to create any easy, langauage-agnositic way convert office documents (e.g., PowerPoint, Google Slides, Libreoffice) to images for display and editing over the web.  This helps business sales analytics quickly turn around and contributed to client-side development and applications.  This is also a convenient thumbnail server for file types that are typically hard proview without 3rd party libraries.  and Previous solutions are platform- or language-dependent (e.g., requires VBA or Google Scripts). For api documentation, please visit [https://api.presalytics.io/doc-converter/docs](https://api.presalytics.io/doc-converter/docs).
 

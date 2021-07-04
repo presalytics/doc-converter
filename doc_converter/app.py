@@ -1,6 +1,7 @@
 import logging
 import io
 import uuid
+import os
 from fastapi import (
     FastAPI,
     UploadFile,
@@ -10,6 +11,7 @@ from fastapi import (
     status
 )
 from fastapi.responses import JSONResponse, RedirectResponse, StreamingResponse
+from fastapi.openapi.utils import get_openapi
 from doc_converter import util  # type: ignore
 from doc_converter.processmgr.processmgr import ProcessMgr
 from doc_converter.processmgr.redis_wrapper import RedisWrapper
@@ -98,3 +100,30 @@ def svg_get(id: uuid.UUID, request: Request):
     elif not file_content:
         raise HTTPException(status_code=404, detail="This file has expried (or never existed), please retry conversion")
     return StreamingResponse(io.BytesIO(file_content), media_type="image/svg+xml")
+
+
+def get_api_description():
+    readme = os.path.join(os.path.dirname(os.path.dirname(__file__)), "README.md")
+    description = ''
+    with open(readme, 'r') as f:
+        description = f.read()
+    return description.replace('Presalytics Doc Converter', '')
+
+
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    openapi_schema = get_openapi(
+        title="Presalytics Doc Converter",
+        version="1.0.0",
+        description=get_api_description(),
+        routes=app.routes,
+    )
+    openapi_schema["info"]["x-logo"] = {
+        "url": "https://presalytics.blob.core.windows.net/media/filer_public_thumbnails/filer_public/ed/0e/ed0e957a-d585-4094-a788-caf03e31b66d/icon_transparent_orange_lg.png__900x900_q85_subsampling-2.png"
+    }
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+
+app.openapi = custom_openapi  # type: ignore
