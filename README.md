@@ -7,17 +7,17 @@ Convert PowerPoint, Google Slides and Libreoffice files to images (.png), thumbn
 1. [Getting Started](#Getting)
 2. [About](#About)
 3. [Development](#Development)
-4. [Next Steps][#TODOS]
+4. [Next Steps](#TODOs)
 5. [Contributing](#Contributing)
 
 ## Getting started
 
-To run a local version of the application, use the [docker-compose](https://docs.docker.com/compose/install/) command from the command line or your version of [Docker Desktop](https://docs.docker.com/desktop/).
+To run a local version of the application, clone this repo and use the [docker-compose](https://docs.docker.com/compose/install/) command from the command line or your version of [Docker Desktop](https://docs.docker.com/desktop/).
 
 From the command line, the commands:
 
 ````bash
-docker-compose build
+git clone https://github.com/presalytics/doc-converter.git
 docker-compose up
 ````
 
@@ -32,6 +32,14 @@ python -m unittest test.integration_test
 ````
 
 After these commands complete, the sample files `Rectanagle.png` and `Rectangle.svg` will be located the `out/` directory in the current folder.
+
+To convert you own files locally, you can create a directory named `in` in the root directory of your clone repo.  Place your files in the directory you created and run the command:
+
+````bash
+python run.py <convert_type>
+````
+
+where `<convert_type>` is either `svg` or `png`, depending upon the type of output file that you need.  This argument defautls to `png`.
 
 ## Development
 
@@ -51,8 +59,12 @@ This project was created to create any easy, langauage-agnositic way convert off
 
 Image processing jobs are managed on a [celery queue](https://docs.celeryproject.org/en/stable/).  The image conversation handled on a subprocess by calling into the uno apis developed by the [Libreoffice project](https://www.libreoffice.org/).  The API webserver is implemented using the [FastApi project](https://fastapi.tiangolo.com/).  Many thnks to all the these open source contributors whose work is conbimed to build this point solution.
 
-## TODOS: Next steps
+## TODOs: Next steps
 
 - [ ] Add websocket support
 - [ ] Reduce built docker image sizes
 - [ ] Add https paths and worker tasks for output image (.png) scaling
+
+## Contributing
+
+We'd love your contributions!  Please either open an issue, or better yet, write a PR.  And, of course, don't be a jerk.
