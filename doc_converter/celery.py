@@ -1,4 +1,4 @@
-import logging, os
+import logging
 from doc_converter.processmgr.processmgr import ProcessMgr
 from doc_converter.processmgr.redis_wrapper import RedisWrapper
 from doc_converter import util
@@ -15,6 +15,7 @@ CELERY_BROKER_URL = 'redis://:{0}@{1}:{2}/0'.format(util.REDIS_PASSWORD, util.RE
 
 celery_app = Celery()
 celery_app.conf.broker_url = CELERY_BROKER_URL
+
 
 @setup_logging.connect
 def config_loggers(*args, **kwargs):
@@ -34,4 +35,3 @@ def convert_task(redis_key):
         task_logger = get_task_logger(__name__)
         task_logger.exception(ex)
         raise ex
-

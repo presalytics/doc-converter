@@ -1,8 +1,32 @@
 version: '3.4'
 
 services:
-  docconverter:
-    image: docconverter
+  api:
+    image: presalytics/doc_converter_api
     build:
       context: .
-      dockerfile: ./Dockerfile
+      dockerfile: ./api.dockerfile
+    ports:
+      - 8080:80
+    environment:
+      REDIS_PASSWORD: Password@1
+      REDIS_HOST: redis
+      JSON_LOGGER: 'False'
+  worker:
+    image: presalytics/doc_converter_worker
+    build:
+      context: .
+      dockerfile: ./worker.dockerfile
+    environment:
+      REDIS_PASSWORD: Password@1
+      REDIS_HOST: redis
+      LC_ALL: C.UTF-8
+      LANG: C.UTF-8
+      JSON_LOGGER: 'False'
+  redis:
+    image: redis:latest
+    ports:
+      - 6379:6379
+    command: redis-server --requirepass $REDIS_PASSWORD
+    environment:
+      REDIS_PASSWORD: Password@1

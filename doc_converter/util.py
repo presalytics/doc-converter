@@ -8,18 +8,23 @@ from environs import Env
 from logging.config import dictConfig
 from wsgi_microservice_middleware import RequestIdFilter, RequestIdJsonLogFormatter
 
+os.environ['LC_ALL'] = 'C.UTF-8'
+os.environ['LANG'] = 'C.UTF-8'
+
 env = Env()
 env.read_env()
 
-if env.bool("DEBUG", False):
+if env.bool("DEBUG", False) or not env.bool('JSON_LOGGER', True):
     log_formatter = 'default'
+    log_level = 'DEBUG'
 else:
     log_formatter = 'json'
+    log_level = 'INFO'
 
 logger_settings = {
     'version': 1,
     'filters': {
-        'request_id_filter' : {
+        'request_id_filter': {
             '()': RequestIdFilter,
         }
     },
@@ -39,14 +44,14 @@ logger_settings = {
         },
     },
     'root': {
-        'level': 'DEBUG',
+        'level': log_level,
         'handlers': ['wsgi']
     }
 }
 
 dictConfig(logger_settings)
-logger = logging.getLogger('doc_converter.util')
-logger.info("Web App Logger Initialized")
+logger = logging.getLogger(__name__)
+logging.getLogger('multipart.multipart').setLevel(logging.INFO)
 
 
 def handle_exception(exc_type, exc_value, exc_traceback):
@@ -57,7 +62,9 @@ def handle_exception(exc_type, exc_value, exc_traceback):
 
     logger.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
 
+
 sys.excepthook = handle_exception
+
 
 def strip_scripts(filename):
     """ function to strip javascript out of svg file to reduce filesize.
@@ -77,6 +84,7 @@ def strip_scripts(filename):
     with open(new_filename, 'w') as outfile:
         outfile.write(new_str)
     return new_filename
+
 
 REDIS_HOST = env.str("REDIS_HOST", "0.0.0.0")
 

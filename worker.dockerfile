@@ -11,10 +11,11 @@ WORKDIR /srv/doc_converter
 
 
 COPY ./.bashrc /root
+COPY ./run_worker.sh /bin
 RUN  mkdir /var/www/.config /var/www/.config/dconf /tmp/libreoffice /tmp/convert \ 
     && chown -R www-data:www-data /var/www /srv/doc_converter \
     && chmod -R 777 /tmp /var/www /srv
 
 EXPOSE 5679
 
-CMD [ "python3", "-m", "celery", "-A", "doc_converter.celery.celery_app", "worker", "--loglevel=DEBUG" ]
+CMD [ "run_worker.sh" ]

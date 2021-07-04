@@ -6,23 +6,38 @@ services:
     build:
       context: .
       dockerfile: ./api.dockerfile
-    env_file: ./.env
     command: ["sh", "-c", "pip3 install debugpy -t /tmp && python3 /tmp/debugpy --wait-for-client --listen 0.0.0.0:5678 main.py "]
     ports:
       - 5678:5678
       - 8080:8080
-    env_file: ./.env
+    environment:
+      REDIS_PASSWORD: Password@1
+      REDIS_HOST: redis
+      LC_ALL: C.UTF-8
+      LANG: C.UTF-8
+      DEBUG: 'True'
+      JSON_LOGGER: 'False'
+  
   worker:
     image: presalytics/doc_converter_worker
     build:
       context: .
       dockerfile: ./worker.dockerfile
-    env_file: ./.env
+    environment:
+      REDIS_PASSWORD: Password@1
+      REDIS_HOST: redis
+      LC_ALL: C.UTF-8
+      LANG: C.UTF-8
+      DEBUG: 'True'
+      JSON_LOGGER: 'False'
     ports:
       - 5679:5679
     command: ["sh", "-c", "pip3 install debugpy -t /tmp && python3 /tmp/debugpy --wait-for-client --listen 0.0.0.0:5679 -m celery -A doc_converter.celery.celery_app worker --loglevel=DEBUG -P solo"]
+  
   redis:
     image: redis:latest
     ports:
       - 6379:6379
-    command: redis-server --requirepass Password@1
+    command: redis-server --requirepass $REDIS_PASSWORD
+    environment:
+      REDIS_PASSWORD: Password@1

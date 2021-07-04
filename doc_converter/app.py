@@ -1,6 +1,4 @@
-import os 
-import logging 
-import re
+import logging
 import io
 import uuid
 from fastapi import (
@@ -23,15 +21,15 @@ logger = logging.getLogger(__name__)
 app = FastAPI(root_path=util.ROOT_PATH)
 
 
-app.get("/")
+@app.get("/")
 def home():
     return RedirectResponse(url="/docs")
 
 
 @app.post('/convert/svg')
 def svgconvert(request: Request, file: UploadFile = File(...)):
-    """ 
-    Converts the uploaded file to an svg file. 
+    """
+    Converts the uploaded file to an svg file.
     """
     try:
         pm = ProcessMgr.from_upload_file(file, "svg")
@@ -40,8 +38,8 @@ def svgconvert(request: Request, file: UploadFile = File(...)):
         content = {
             "cacheKey": pm.redis_key,
             "status": "processing",
-            "url": "{0}://{1}{2}/svg/{3}".format(request.url.scheme, request.url.netloc, request.scope.get("root_path"), pm.redis_key) 
-        } 
+            "url": "{0}://{1}{2}/svg/{3}".format(request.url.scheme, request.url.netloc, request.scope.get("root_path"), pm.redis_key)
+        }
         return JSONResponse(content=content, status_code=status.HTTP_202_ACCEPTED)
     except Exception as ex:
         logger.exception(ex)
@@ -50,8 +48,8 @@ def svgconvert(request: Request, file: UploadFile = File(...)):
 
 @app.post('/convert/png')
 def pngconvert(request: Request, file: UploadFile = File(...)):
-    """ 
-    Converts the uploaded file to an png file. 
+    """
+    Converts the uploaded file to an png file.
     """
     try:
         pm = ProcessMgr.from_upload_file(file, "png")
@@ -61,7 +59,7 @@ def pngconvert(request: Request, file: UploadFile = File(...)):
             "cacheKey": pm.redis_key,
             "status": "processing",
             "url": "{0}://{1}{2}/png/{3}".format(request.url.scheme, request.url.netloc, request.scope.get("root_path"), pm.redis_key)
-        } 
+        }
         return JSONResponse(content=content, status_code=status.HTTP_202_ACCEPTED)
     except Exception as ex:
         logger.exception(ex)
@@ -78,10 +76,10 @@ def png_get(id: uuid.UUID, request: Request):
             "cacheKey": str(id),
             "status": "processing",
             "url": str(request.url)
-        } 
+        }
         return JSONResponse(content=content, status_code=status.HTTP_202_ACCEPTED)
     elif not file_content:
-        raise HTTPException(status=404, detail="This file has expried (or never existed), please retry conversion")
+        raise HTTPException(status_code=404, detail="This file has expried (or never existed), please retry conversion")
     return StreamingResponse(io.BytesIO(file_content), media_type="image/png")
 
 
@@ -95,10 +93,8 @@ def svg_get(id: uuid.UUID, request: Request):
             "cacheKey": str(id),
             "status": "processing",
             "url": str(request.url)
-        } 
+        }
         return JSONResponse(content=content, status_code=status.HTTP_202_ACCEPTED)
     elif not file_content:
-        raise HTTPException(status=404, detail="This file has expried (or never existed), please retry conversion")
+        raise HTTPException(status_code=404, detail="This file has expried (or never existed), please retry conversion")
     return StreamingResponse(io.BytesIO(file_content), media_type="image/svg+xml")
-
-

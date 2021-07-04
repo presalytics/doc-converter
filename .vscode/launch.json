@@ -6,11 +6,21 @@
     "compounds": [
         {
             "name": "api + worker",
-            "configurations": ["api-debug-attach", "worker-debug-attach"],
+            "configurations": [
+                "api-debug-attach",
+                "worker-debug-attach"
+            ],
             "preLaunchTask": "docker-compose-debug"
         }
     ],
     "configurations": [
+        {
+            "name": "run-local",
+            "type": "python",
+            "request": "launch",
+            "program": "run.py",
+            "console": "integratedTerminal"
+        },
         {
             "name": "api-debug-attach",
             "type": "python",

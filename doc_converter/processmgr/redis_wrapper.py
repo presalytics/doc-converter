@@ -3,7 +3,6 @@ import logging
 import json
 import presalytics
 import datetime
-import typing
 from doc_converter.util import CACHE_EXPIRY_SECONDS, REDIS_HOST, REDIS_PASSWORD, REDIS_PORT
 
 
@@ -78,8 +77,7 @@ class RedisWrapper(object):
             self._redis.expire(key, CACHE_EXPIRY_SECONDS)
         else:
             logger.error("Unable to store converted file in Redis Db.")
-        
-            
+
     def test_connection(self):
         try:
             self._redis.set('connection_test', 1234)
@@ -89,13 +87,10 @@ class RedisWrapper(object):
             return False
 
     @classmethod
-    def get_redis(cls, test_connection=False) -> typing.Optional['RedisWrapper']:
-        if not cls.USE_REDIS:
-            return None
+    def get_redis(cls, test_connection=False) -> 'RedisWrapper':
         try:
             redis_client = cls(test_connection=test_connection)
-        except redis.exceptions.ConnectionError:
+            return redis_client
+        except redis.exceptions.ConnectionError as ex:
             logger.warning("UNABLE TO CONNECT to its REDIS database.  Caching is unavailable.")
-            cls.USE_REDIS = False
-            return None
-        return redis_client
+            raise ex
