@@ -1,0 +1,91 @@
+name: Test-Build-Deploy
+on:
+  push:
+    branches: [ develop, master ]
+  pull_request:
+    branches: [ develop, master ]
+
+jobs:
+  build-api: 
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: Add git version to manifests
+      run: |
+        cd $GITHUB_WORKSPACE
+        pip3 install gitpython
+        python3 scripts/update_hashes.py
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v1
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        dockerfile: ./api.dockerfile
+        repository: 'presalytics/doc_converter_api'
+        platforms: linux/amd64,linux/arm64
+        tag_with_ref: true
+        tag_with_sha: true
+
+  build-worker:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: Add git version to manifests
+      run: |
+        cd $GITHUB_WORKSPACE
+        pip3 install gitpython
+        python3 scripts/update_hashes.py
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v1
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        repository: 'presalytics/doc_converter_worker'
+        dockerfile: worker.dockerfile
+        tag_with_ref: true
+        tag_with_sha: true
+
+  deploy-api:
+    if: github.ref == 'refs/heads/master'
+    needs: [build-api]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: Azure Kubernetes set context
+      uses: azure/aks-set-context@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        resource-group: presalytics-prod
+        cluster-name: production
+      id: login
+      # https://github.com/Azure/k8s-deploy/
+    - name: Deploy to k8s
+      uses: Azure/k8s-deploy@v1.4
+      with:
+        namespace: api
+        # Specify what manifest file or files to use - for now, the comms manifest files are in the manifests folder in the comms repo
+        manifests: |
+          manifests/api-service.yaml
+
+  deploy-frontend:
+    if: github.ref == 'refs/heads/master'
+    needs: [build-worker]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: Azure Kubernetes set context
+      # https://github.com/Azure/aks-set-context/
+      uses: azure/aks-set-context@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        resource-group: presalytics-prod
+        cluster-name: production
+      id: login
+      # https://github.com/Azure/k8s-deploy/
+    - name: Deploy to k8s
+      uses: Azure/k8s-deploy@v1.4
+      with:
+        namespace: api
+        # Specify what manifest file or files to use - for now, the comms manifest files are in the manifests folder in the comms repo
+        manifests: |
+          manifests/worker-service.yaml

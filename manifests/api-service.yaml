@@ -1,0 +1,56 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  labels:
+    app: doc-converter-api
+    app.kubernetes.io/part-of: api
+  name: doc-converter-api
+  namespace: api
+spec:
+  template:
+    metadata:
+      labels:
+        app: doc-converter-api
+        app.kubernetes.io/part-of: api
+        networking.knative.dev/visibility: cluster-local
+      namespace: api
+    spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - preference:
+              matchExpressions:
+              - key: spot
+                operator: In
+                values:
+                - 'true'
+            weight: 1
+      tolerations:
+      - effect: NoSchedule
+        key: kubernetes.azure.com/scalesetpriority
+        operator: Equal
+        value: spot
+      containers:
+      - name: doc-converter-api
+        image: presalytics/doc_converter_api
+        imagePullPolicy: Always
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+        env:
+        - name: REDIS_HOST
+          value: lru-cache.redis.svc.cluster.local
+        - name: REDIS_PORT
+          value: "6380"
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: redis
+              key: password
+        ports:
+        - containerPort: 8080
+  

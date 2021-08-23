@@ -57,13 +57,14 @@ This project's code linted using the mypy and flake8 linters. Ensure to install 
 
 This project was created to create any easy, langauage-agnositic way convert office documents (e.g., PowerPoint, Google Slides, Libreoffice) to images for display and editing over the web.  This helps business sales analytics quickly turn around and contributed to client-side development and applications.  This is also a convenient thumbnail server for file types that are typically hard proview without 3rd party libraries.  and Previous solutions are platform- or language-dependent (e.g., requires VBA or Google Scripts). For api documentation, please visit [https://api.presalytics.io/doc-converter/docs](https://api.presalytics.io/doc-converter/docs).
 
-Image processing jobs are managed on a [celery queue](https://docs.celeryproject.org/en/stable/).  The image conversation handled on a subprocess by calling into the uno apis developed by the [Libreoffice project](https://www.libreoffice.org/).  The API webserver is implemented using the [FastApi project](https://fastapi.tiangolo.com/).  Many thnks to all the these open source contributors whose work is conbimed to build this point solution.
+Image processing jobs are managed on a [celery queue](https://docs.celeryproject.org/en/stable/).  The image conversation handled on a subprocess by calling into the uno apis developed by the [Libreoffice project](https://www.libreoffice.org/).  The API webserver is implemented using the [FastApi project](https://fastapi.tiangolo.com/).  Many thnks to all the these open source contributors whose work is conbined to build this point solution.
 
 ## TODOs: Next steps
 
 - [ ] Add websocket support
 - [ ] Reduce built docker image sizes
 - [ ] Add https paths and worker tasks for output image (.png) scaling
+- [ ] Enable worker to run in standalone mode by reading and emitting [Cloud Events](https://cloudevents.io/)
 
 ## Contributing
 
