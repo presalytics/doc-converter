@@ -30,11 +30,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
-    - name: Add git version to manifests
-      run: |
-        cd $GITHUB_WORKSPACE
-        pip3 install gitpython
-        python3 scripts/update_hashes.py
     - name: Build and push Docker image
       uses: docker/build-push-action@v1
       with:
@@ -51,6 +46,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
+    - name: Add git version to manifests
+      run: |
+        cd $GITHUB_WORKSPACE
+        pip3 install gitpython
+        python3 scripts/update_hashes.py
     - name: Azure Kubernetes set context
       uses: azure/aks-set-context@v1
       with:
@@ -73,6 +73,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
+    - name: Add git version to manifests
+      run: |
+        cd $GITHUB_WORKSPACE
+        pip3 install gitpython
+        python3 scripts/update_hashes.py
     - name: Azure Kubernetes set context
       # https://github.com/Azure/aks-set-context/
       uses: azure/aks-set-context@v1
