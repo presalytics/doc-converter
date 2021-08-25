@@ -10,66 +10,75 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
-    - name: Add git version to manifests
-      run: |
-        cd $GITHUB_WORKSPACE
-        pip3 install gitpython
-        python3 scripts/update_hashes.py
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v1
+    - name: Docker meta
+      id: meta
+      uses: docker/metadata-action@v3
+      with:
+        # list of Docker images to use as base name for tags
+        images: presalytics/doc_converter_api
+        tags: |
+          type=ref,event=tag
+          type=ref,event=branch
+          type=sha
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v1
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+      
+    - name: Login to DockerHub
+      uses: docker/login-action@v1 
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
-        dockerfile: ./api.dockerfile
-        repository: 'presalytics/doc_converter_api'
-        platforms: linux/amd64,linux/arm64
-        tag_with_ref: true
-        tag_with_sha: true
+
+    - name: Build and push
+      id: docker_build
+      uses: docker/build-push-action@v2
+      with:
+        file: ./api.dockerfile
+        context: .
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: ${{ steps.meta.outputs.tags }}
 
   build-worker:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v1
+    - name: Docker meta
+      id: meta
+      uses: docker/metadata-action@v3
+      with:
+        # list of Docker images to use as base name for tags
+        images: presalytics/doc_converter_worker
+        tags: |
+          type=ref,event=tag
+          type=ref,event=branch
+          type=sha
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v1
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+      
+    - name: Login to DockerHub
+      uses: docker/login-action@v1 
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
-        repository: 'presalytics/doc_converter_worker'
-        dockerfile: worker.dockerfile
-        tag_with_ref: true
-        tag_with_sha: true
 
-  deploy-api:
-    if: github.ref == 'refs/heads/master'
-    needs: [build-api]
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@master
-    - name: Add git version to manifests
-      run: |
-        cd $GITHUB_WORKSPACE
-        pip3 install gitpython
-        python3 scripts/update_hashes.py
-    - name: Azure Kubernetes set context
-      uses: azure/aks-set-context@v1
+    - name: Build and push
+      id: docker_build
+      uses: docker/build-push-action@v2
       with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-        resource-group: presalytics-prod
-        cluster-name: production
-      id: login
-      # https://github.com/Azure/k8s-deploy/
-    - name: Deploy to k8s
-      uses: Azure/k8s-deploy@v1.4
-      with:
-        namespace: api
-        # Specify what manifest file or files to use - for now, the comms manifest files are in the manifests folder in the comms repo
-        manifests: |
-          manifests/api-service.yaml
+        file: ./worker.dockerfile
+        context: .
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: ${{ steps.meta.outputs.tags }}
 
-  deploy-frontend:
+  deploy:
     if: github.ref == 'refs/heads/master'
-    needs: [build-worker]
+    needs: [build-worker, build-api]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
@@ -94,3 +103,4 @@ jobs:
         # Specify what manifest file or files to use - for now, the comms manifest files are in the manifests folder in the comms repo
         manifests: |
           manifests/worker-service.yaml
+          manifests/api-service.yaml

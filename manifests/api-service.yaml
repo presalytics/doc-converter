@@ -2,15 +2,15 @@ apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
   labels:
-    app: doc-converter-api
+    app: doc-converter
     app.kubernetes.io/part-of: api
-  name: doc-converter-api
+  name: doc-converter
   namespace: api
 spec:
   template:
     metadata:
       labels:
-        app: doc-converter-api
+        app: doc-converter
         app.kubernetes.io/part-of: api
         networking.knative.dev/visibility: cluster-local
       namespace: api
@@ -31,7 +31,7 @@ spec:
         operator: Equal
         value: spot
       containers:
-      - name: doc-converter-api
+      - name: doc-converter
         image: presalytics/doc_converter_api
         imagePullPolicy: Always
         resources:
