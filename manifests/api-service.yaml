@@ -12,6 +12,8 @@ spec:
       labels:
         app: doc-converter
         app.kubernetes.io/part-of: api
+      annotations:
+        autoscaling.knative.dev/scaleDownDelay: "15m"
       namespace: api
     spec:
       affinity:
