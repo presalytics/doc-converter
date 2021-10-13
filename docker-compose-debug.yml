@@ -9,7 +9,7 @@ services:
     command: ["sh", "-c", "pip3 install debugpy -t /tmp && python3 /tmp/debugpy --wait-for-client --listen 0.0.0.0:5678 main.py "]
     ports:
       - 5678:5678
-      - 8080:8080
+      - 8091:8080
     environment:
       REDIS_PASSWORD: Password@1
       REDIS_HOST: redis
@@ -38,6 +38,6 @@ services:
     image: redis:latest
     ports:
       - 6379:6379
-    command: redis-server --requirepass $REDIS_PASSWORD
+    command: redis-server --requirepass Password@1
     environment:
       REDIS_PASSWORD: Password@1

@@ -101,3 +101,9 @@ CACHE_EXPIRY_SECONDS = env.int("CACHE_EXPIRY_SECONDS", 300)
 ROOT_PATH = env.str("ROOT_PATH", None)
 
 TEMP_FOLDER = '/tmp/convert'
+
+MAX_JOB_RETRIES = env.int("MAX_JOB_RETRIES", 3)
+
+EVENT_BROKER_URL = env.str("EVENT_BROKER_URL", None)
+
+EVENT_SOURCE = env.str("EVENT_SOURCE", "https://doc-converter.api.presalytics.io")

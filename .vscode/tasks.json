@@ -6,7 +6,8 @@
         {
             "label": "clear-containers",
             "type": "shell",
-            "command": "docker stop dc_debug && docker rm dc_debug"
+            "command": "docker stop dc_debug && docker rm dc_debug  || :",
+            "problemMatcher": []
         },
         {
             "type": "docker-build",
@@ -19,7 +20,6 @@
                 "pull": true
             }
         },
-        
         {
             "type": "docker-build",
             "label": "worker-docker-build",
@@ -30,6 +30,44 @@
                 "context": "${workspaceFolder}",
                 "pull": true
             }
+        },
+        {
+            "type": "docker-build",
+            "label": "async-api-docker-build",
+            "platform": "python",
+            "dockerBuild": {
+                "tag": "doc_converter_async",
+                "dockerfile": "${workspaceFolder}/async.dockerfile",
+                "context": "${workspaceFolder}",
+                "pull": true
+            }
+        },
+        {
+            "type": "docker-run",
+            "label": "Run async converter",
+            "dockerRun": {
+                "command": "python3 -m debugpy --wait-for-client --listen 0.0.0.0:5678 -m uvicorn doc_converter.async_app:app --host 0.0.0.0 --port 8080",
+                "containerName": "dc_debug",
+                "envFiles": [
+                    "${workspaceFolder}/.env"
+                ],
+                "image": "doc_converter_async",
+                "ports": [
+                    {
+                        "containerPort": 8080,
+                        "hostPort": 8080
+                    },
+                    {
+                        "containerPort": 5678,
+                        "hostPort": 5678
+                    }
+                ]
+            },
+            "dependsOn": [
+                "clear-containers"
+            ],
+            
+        
         },
         {
             "label": "docker-compose-debug",
@@ -55,5 +93,11 @@
             "command": "docker compose down --remove-orphans",
             "problemMatcher": []
         },
+        {
+            "label": "Send Test request",
+            "type":"shell",
+            "command": "python3 test/async_send_test_request.py",
+            "problemMatcher": []
+        }
     ]
 }

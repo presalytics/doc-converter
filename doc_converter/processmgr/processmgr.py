@@ -1,13 +1,18 @@
 """ Module for passing data to and from api and libreoffice subprocesses on the server """
 import os
+from time import sleep
 import uuid
 import re
 import pickle
 import logging
+import typing
+import shutil
 from fastapi import UploadFile
-from doc_converter.processmgr.redis_wrapper import RedisWrapper
 from doc_converter.processmgr.uno_controller import UnoConverter
 from doc_converter.util import TEMP_FOLDER
+from doc_converter.storage.base import FileStorageBase
+from doc_converter.storage.cache_store import CacheStore
+from doc_converter.storage.in_memory_store import InMemoryStore
 
 
 logger = logging.getLogger(__name__)
@@ -45,6 +50,10 @@ class ProcessMgr(object):
         """ Determines filetypes from extension and whether it can be converted """
         return '.' in filename and ProcessMgr.get_file_extension(filename) in ProcessMgr.ALLOWED_EXTENSIONS
 
+    class Modes:
+        WORKER = "worker"
+        IN_PROCESS = "in_process"
+
     class ConvertTypes:
         "Conversion type options for processmgr"
         SVG = "svg"
@@ -61,14 +70,25 @@ class ProcessMgr(object):
         else:
             return None
 
-    def __init__(self, file: bytes, filename: str, convert_type: str):
+    def __init__(self,
+                 file: bytes,
+                 filename: str,
+                 convert_type: str,
+                 metadata: typing.Dict = {},
+                 mode: str = "worker"):
 
         self.file = file
         self.convert_type = convert_type
         self.file_extension = ProcessMgr.get_file_extension(filename)
-        self.redis_key = self.extract_guid(filename) or str(uuid.uuid4())
-        self.temp_filename = os.path.join(TEMP_FOLDER, self.redis_key + "." + self.file_extension)
+        self.key = self.extract_guid(filename) or metadata.get('id', None) or str(uuid.uuid4())
+        self.temp_filename = os.path.join(TEMP_FOLDER, self.key + "." + self.file_extension)
         self.converted = False
+        self.use_cache = False
+        self.metadata = metadata
+        self.outfile_contents: typing.Optional[bytes] = None
+        self.mode = mode
+        self.outfile_has_been_read = False
+        self.storage: FileStorageBase = self.get_storage_type()(self.key, self.convert_type)  # type: ignore
 
     """ Maps file extensions to filter data """
     extension_map = {
@@ -84,6 +104,14 @@ class ProcessMgr(object):
         "odg": ["visio", "draw"]
     }
 
+    def get_storage_type(self):
+        if self.mode == self.Modes.WORKER:
+            return CacheStore
+        elif self.mode == self.Modes.IN_PROCESS:
+            return InMemoryStore
+        else:
+            raise TypeError('Unsupported storage type requested')
+
     def create_outfile_name(self):
         """Generates the filename of the returned file after
         libreoffice has completed file conversion
@@ -92,7 +120,7 @@ class ProcessMgr(object):
             string -- file path to converted file (assuming file has been converted)
         """
 
-        self.outfile = os.path.join(TEMP_FOLDER, self.redis_key + "." + self.convert_type)
+        self.outfile = os.path.join(TEMP_FOLDER, self.key + "." + self.convert_type)
         return self.outfile
 
     def convert(self):
@@ -103,14 +131,22 @@ class ProcessMgr(object):
             converter.convert(self.temp_filename, self.convert_type)
             if os.path.exists(self.outfile):
                 self.converted = True
-                self.cache()
+                self.storage.put_file(self.outfile)
                 self.teardown()
+                logger.info("Conversion complete. Key: {}".format(self.key))
                 return self.outfile
             else:
                 raise IOError("Document conversion failed")
         except Exception as ex:
             logger.exception(ex)
-            raise IOError("Document conversion failed")
+            t = UnoConverter(input_dir=TEMP_FOLDER, output_dir=TEMP_FOLDER)
+            t.kill_soffice()
+            t.start_soffice()
+            shutil.rmtree(TEMP_FOLDER)
+            os.mkdir(TEMP_FOLDER)
+            os.chmod(TEMP_FOLDER, 777)
+            sleep(1)
+            raise ex
 
     def serialize(self):
         return pickle.dumps(self)
@@ -124,6 +160,7 @@ class ProcessMgr(object):
         self.teardown()
         with open(self.temp_filename, 'wb+') as f:
             f.write(self.file)
+        os.chmod(self.temp_filename, 777)
 
     def teardown(self):
         try:
@@ -134,27 +171,37 @@ class ProcessMgr(object):
             os.remove(self.outfile)
         except Exception:
             pass
-        if self.converted:
-            r = RedisWrapper.get_redis()
-            r._redis.delete(self.redis_key)
-
-    def cache(self):
-        r = RedisWrapper.get_redis()
-        r.store(self.outfile, self.get_converted_file_key())
+        # self.storage.clean() Don't clean store in teardown it remove data held at the key
 
     @classmethod
-    def from_upload_file(cls, file: UploadFile, convert_type: str):
-        return cls(file.file.read(), file.filename, convert_type)
+    def from_upload_file(cls, file: UploadFile, convert_type: str, **kwargs):
+        try:
+            file.file.seek(0)
+        except Exception:
+            pass
+        return cls(file.file.read(), file.filename, convert_type, **kwargs)
 
     def handoff_to_worker(self):
-        from doc_converter.celery import convert_task
-        r = RedisWrapper.get_redis()
-        r._redis.set(self.redis_key, self.serialize())
-        convert_task.delay(self.redis_key)
+        if self.mode == self.Modes.WORKER:
+            import uuid
+            from doc_converter.celery import convert_task
+            from doc_converter.storage.redis_wrapper import RedisWrapper
+            r = RedisWrapper.get_redis()
+            pickle_obj_key = uuid.uuid4()
+            r._redis.set(pickle_obj_key, self.serialize())
+            convert_task.delay(self.key)
+        else:
+            logger.error("This method probably shouldn't be used if you're not processing on worker thread.  It doesn't do anything.")
 
     def reserve_cache_key(self):
-        r = RedisWrapper.get_redis()
-        r._redis.set(self.get_converted_file_key(), b'\x00')
+        self.storage.allocate_key()
 
     def get_converted_file_key(self):
-        return self.convert_type + "-" + self.redis_key
+        return self.convert_type + "-" + self.key
+
+    def read_outfile(self):
+        if not self.converted or not self.outfile:
+            raise Exception('This object has not been converted.  Please run conversion before attempting to read the converted file contents')
+        with open(self.outfile, 'rb') as f:
+            self.outfile_contents = f.read()
+        self.outfile_has_been_read = True

@@ -1,3 +1,4 @@
 mypy
 flake8
 docker-compose>=1.29.2
+types-redis

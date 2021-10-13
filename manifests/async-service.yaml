@@ -1,0 +1,53 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  labels:
+    app: doc-converter
+    app.kubernetes.io/part-of: api
+  name: doc-converter
+  namespace: api
+spec:
+  template:
+    metadata:
+      labels:
+        app: doc-converter
+        app.kubernetes.io/part-of: api
+      annotations:
+        autoscaling.knative.dev/scaleDownDelay: "15m"
+      namespace: api
+    spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - preference:
+              matchExpressions:
+              - key: spot
+                operator: In
+                values:
+                - 'true'
+            weight: 1
+      tolerations:
+      - effect: NoSchedule
+        key: kubernetes.azure.com/scalesetpriority
+        operator: Equal
+        value: spot
+      containers:
+      - name: doc-converter
+        image: presalytics/doc_converter_api
+        imagePullPolicy: Always
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+        env:
+        - name: EVENT_BROKER_URL
+          valueFrom: 
+            configMapKeyRef:
+              name: api
+              key: event-broker-url
+        ports:
+        - containerPort: 8080
+  

@@ -15,6 +15,13 @@
     ],
     "configurations": [
         {
+            "name": "Test Request",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/test/async_send_test_request.py",
+            "console": "integratedTerminal"
+        },
+        {
             "name": "run-local",
             "type": "python",
             "request": "launch",
@@ -52,6 +59,37 @@
                 }
             ],
             "justMyCode": false
+        },
+        {
+            "name": "async-debug-attach",
+            "type": "python",
+            "request": "attach",
+            "connect": {
+                "host": "localhost",
+                "port": 5680
+            },
+            "pathMappings": [
+                {
+                    "localRoot": "${workspaceFolder}",
+                    "remoteRoot": "."
+                }
+            ],
+            "justMyCode": false
+        },
+        {
+            "name": "Async",
+            "type": "docker",
+            "request": "launch",
+            "preLaunchTask": "async-api-docker-build",
+            "python": {
+                "pathMappings": [
+                    {
+                        "localRoot": "${workspaceFolder}",
+                        "remoteRoot": "/app"
+                    }
+                ],
+                "fastapi": true
+            }
         },
     ],
 }

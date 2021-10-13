@@ -48,15 +48,7 @@ class Impress(LoadingComponentBase):
 
 class UnoConverter(object):
     def __init__(self, input_dir=None, output_dir=None):
-        if "soffice.bin" not in (p.name() for p in psutil.process_iter()):
-            subprocess.Popen('libreoffice --accept="socket,host=localhost,port=8100;urp;StarOffice.Service" --norestore --nologo --nodefault --headless -env:UserInstallation=file:///tmp/libreoffice',
-                             stdin=None,
-                             stdout=None,
-                             stderr=None,
-                             close_fds=True,
-                             shell=True
-                             )
-            time.sleep(1)
+        self.start_soffice()
         self.context = connect(Socket("localhost", "8100"))
         self.output_dir = output_dir
         if self.output_dir is None:
@@ -64,6 +56,34 @@ class UnoConverter(object):
         self.input_dir = input_dir
         if self.input_dir is None:
             self.input_dir = os.getcwd()
+
+    DEAD_STATUSES = (
+        psutil.STATUS_DEAD,
+        psutil.STATUS_ZOMBIE
+    )
+
+    def start_soffice(self):
+        if "soffice.bin" not in (p.name() for p in psutil.process_iter() if p.status() not in self.DEAD_STATUSES):
+            subprocess.Popen('libreoffice --accept="socket,host=localhost,port=8100;urp;StarOffice.Service" --norestore --nologo --headless --nodefault -env:UserInstallation=file:///tmp/libreoffice',
+                             stdin=None,
+                             stdout=None,
+                             stderr=None,
+                             close_fds=True,
+                             shell=True
+                             )
+            time.sleep(1)
+
+    def kill_soffice(self):
+        for p in psutil.process_iter():
+            if p.name() == 'soffice.bin' or p.name() == 'oosplash':
+                try:
+                    if p.status() == psutil.STATUS_ZOMBIE:
+                        p.wait()
+                    elif p.is_running():
+                        p.kill()
+
+                except psutil.ZombieProcess:
+                    p.wait()
 
     def get_component(self, filepath, context):
         file_url = convert_path_to_url(filepath)

@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse, RedirectResponse, StreamingResponse
 from fastapi.openapi.utils import get_openapi
 from doc_converter import util  # type: ignore
 from doc_converter.processmgr.processmgr import ProcessMgr
-from doc_converter.processmgr.redis_wrapper import RedisWrapper
+from doc_converter.storage.redis_wrapper import RedisWrapper
 
 
 logger = logging.getLogger(__name__)
@@ -38,9 +38,9 @@ def svgconvert(request: Request, file: UploadFile = File(...)):
         pm.reserve_cache_key()
         pm.handoff_to_worker()
         content = {
-            "cacheKey": pm.redis_key,
+            "cacheKey": pm.key,
             "status": "processing",
-            "url": "{0}://{1}{2}/svg/{3}".format(request.url.scheme, request.url.netloc, request.scope.get("root_path"), pm.redis_key)
+            "url": "{0}://{1}{2}/svg/{3}".format(request.url.scheme, request.url.netloc, request.scope.get("root_path"), pm.key)
         }
         return JSONResponse(content=content, status_code=status.HTTP_202_ACCEPTED)
     except Exception as ex:
@@ -58,9 +58,9 @@ def pngconvert(request: Request, file: UploadFile = File(...)):
         pm.reserve_cache_key()
         pm.handoff_to_worker()
         content = {
-            "cacheKey": pm.redis_key,
+            "cacheKey": pm.key,
             "status": "processing",
-            "url": "{0}://{1}{2}/png/{3}".format(request.url.scheme, request.url.netloc, request.scope.get("root_path"), pm.redis_key)
+            "url": "{0}://{1}{2}/png/{3}".format(request.url.scheme, request.url.netloc, request.scope.get("root_path"), pm.key)
         }
         return JSONResponse(content=content, status_code=status.HTTP_202_ACCEPTED)
     except Exception as ex:

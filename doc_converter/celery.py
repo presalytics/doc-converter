@@ -1,6 +1,6 @@
 import logging
 from doc_converter.processmgr.processmgr import ProcessMgr
-from doc_converter.processmgr.redis_wrapper import RedisWrapper
+from doc_converter.storage.redis_wrapper import RedisWrapper
 from doc_converter import util
 from celery import Celery
 from celery.signals import setup_logging

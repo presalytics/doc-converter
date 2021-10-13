@@ -6,7 +6,7 @@ on:
     branches: [ develop, master ]
 
 jobs:
-  build-api: 
+  build-async-api: 
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
@@ -15,7 +15,7 @@ jobs:
       uses: docker/metadata-action@v3
       with:
         # list of Docker images to use as base name for tags
-        images: presalytics/doc_converter_api
+        images: presalytics/doc_converter_async
         tags: |
           type=ref,event=tag
           type=ref,event=branch
@@ -36,49 +36,14 @@ jobs:
       id: docker_build
       uses: docker/build-push-action@v2
       with:
-        file: ./api.dockerfile
-        context: .
-        push: ${{ github.event_name != 'pull_request' }}
-        tags: ${{ steps.meta.outputs.tags }}
-
-  build-worker:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@master
-    - name: Docker meta
-      id: meta
-      uses: docker/metadata-action@v3
-      with:
-        # list of Docker images to use as base name for tags
-        images: presalytics/doc_converter_worker
-        tags: |
-          type=ref,event=tag
-          type=ref,event=branch
-          type=sha
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v1
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1
-      
-    - name: Login to DockerHub
-      uses: docker/login-action@v1 
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-
-    - name: Build and push
-      id: docker_build
-      uses: docker/build-push-action@v2
-      with:
-        file: ./worker.dockerfile
+        file: ./async.dockerfile
         context: .
         push: ${{ github.event_name != 'pull_request' }}
         tags: ${{ steps.meta.outputs.tags }}
 
   deploy:
     if: github.ref == 'refs/heads/master'
-    needs: [build-worker, build-api]
+    needs: [build-async-api]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
@@ -102,5 +67,4 @@ jobs:
         namespace: api
         # Specify what manifest file or files to use - for now, the comms manifest files are in the manifests folder in the comms repo
         manifests: |
-          manifests/worker-service.yaml
-          manifests/api-service.yaml
+          manifests/async-service.yaml
