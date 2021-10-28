@@ -33,15 +33,15 @@ spec:
         value: spot
       containers:
       - name: doc-converter
-        image: presalytics/doc_converter_api
+        image: presalytics/doc_converter_async:master
         imagePullPolicy: Always
         resources:
           requests:
             memory: "128Mi"
             cpu: "100m"
           limits:
-            memory: "256Mi"
-            cpu: "500m"
+            memory: "1Gi"
+            cpu: "1000m"
         env:
         - name: EVENT_BROKER_URL
           valueFrom: 
@@ -49,5 +49,5 @@ spec:
               name: api
               key: event-broker-url
         ports:
-        - containerPort: 8080
+        - containerPort: 80
   
