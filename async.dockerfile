@@ -43,6 +43,6 @@ COPY ./run_async.sh /bin
 ADD ./doc_converter ./doc_converter
 ADD README.md .
 
-CMD ["./run_async.sh"]
+CMD ["run_async.sh"]
 
 
