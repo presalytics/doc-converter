@@ -3,7 +3,7 @@ import logging
 import uuid
 import base64
 import mimetypes
-from cloudevents.http import CloudEvent, to_structured
+from cloudevents.http import CloudEvent, to_binary
 from doc_converter.processmgr.processmgr import ProcessMgr
 from doc_converter.util import EVENT_BROKER_URL, EVENT_SOURCE
 
@@ -31,7 +31,8 @@ def emit_event(process_mgr: ProcessMgr):
 
     event = CloudEvent(attributes, data)
 
-    headers, body = to_structured(event)
+    headers, body = to_binary(event)
+    headers["Content-Type"] = "application/json"  # type: ignore
 
     if EVENT_BROKER_URL:
         resp = requests.post(EVENT_BROKER_URL, data=body, headers=headers)
