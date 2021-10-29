@@ -18,7 +18,6 @@ def emit_event(process_mgr: ProcessMgr):
     attributes = {
         "type": event_type,
         "subject": filename,
-        "time": datetime.datetime.utcnow().isoformat(),
         "id": str(uuid.uuid4()),
         "source": EVENT_SOURCE
     }
