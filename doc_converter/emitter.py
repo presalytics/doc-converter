@@ -3,8 +3,7 @@ import logging
 import uuid
 import base64
 import mimetypes
-import datetime
-from cloudevents.http import CloudEvent, to_binary
+from cloudevents.http import CloudEvent, to_structured
 from doc_converter.processmgr.processmgr import ProcessMgr
 from doc_converter.util import EVENT_BROKER_URL, EVENT_SOURCE
 
@@ -25,14 +24,14 @@ def emit_event(process_mgr: ProcessMgr):
     data = {
         "resourceId": process_mgr.key,
         "userId": process_mgr.metadata.get("userId", None),
-        "file": base64.b64encode(process_mgr.storage.get_file()),
+        "file": base64.b64encode(process_mgr.storage.get_file()).decode("utf-8"),
         "filename": filename,
         "MIMEType": mimetypes.MimeTypes().guess_type(filename)[0]
     }
 
     event = CloudEvent(attributes, data)
 
-    headers, body = to_binary(event)
+    headers, body = to_structured(event)
 
     if EVENT_BROKER_URL:
         resp = requests.post(EVENT_BROKER_URL, data=body, headers=headers)
