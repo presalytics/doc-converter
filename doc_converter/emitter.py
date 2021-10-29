@@ -37,6 +37,9 @@ def emit_event(process_mgr: ProcessMgr):
 
     if EVENT_BROKER_URL:
         resp = requests.post(EVENT_BROKER_URL, data=body, headers=headers)
-        logger.info("Event Id {0} Sent to {1}.  Event broker responded with status code: {2}".format(attributes.get("id"), EVENT_BROKER_URL, resp.status_code))
+        if resp.ok:
+            logger.info("Event Id {0} Sent to {1}.  Event broker responded with status code: {2}".format(attributes.get("id"), EVENT_BROKER_URL, resp.status_code))
+        else:
+            logger.error("Event broker responded status code {0} with error message {1}".format(resp.status_code, resp.text))
     else:
         logger.info("No EVENT_BROKER_URL provided. No event emitted {}".format(event._attributes['subject']))
