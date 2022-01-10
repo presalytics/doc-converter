@@ -25,7 +25,7 @@ def convert_event_data_to_json(event_data):
 
 
 def emit_event(process_mgr: ProcessMgr):
-    event_type = "doc_converter." + process_mgr.convert_type + "_created"
+    event_type = "story." + process_mgr.convert_type + "_created"
     filename = process_mgr.key + "." + process_mgr.convert_type
     attributes = {
         "type": event_type,
