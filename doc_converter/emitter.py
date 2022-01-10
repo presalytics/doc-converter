@@ -20,6 +20,10 @@ class SimpleEventEncoder(json.JSONEncoder):
             return super(SimpleEventEncoder, self).default(obj)
 
 
+def convert_event_data_to_json(event_data):
+    return json.dumps(event_data, cls=SimpleEventEncoder)
+
+
 def emit_event(process_mgr: ProcessMgr):
     event_type = "doc_converter." + process_mgr.convert_type + "_created"
     filename = process_mgr.key + "." + process_mgr.convert_type
@@ -40,12 +44,11 @@ def emit_event(process_mgr: ProcessMgr):
 
     event = CloudEvent(attributes, data)
 
-    headers, body = to_binary(event)
+    headers, body = to_binary(event, convert_event_data_to_json)
     headers["Content-Type"] = "application/json"  # type: ignore
 
     if EVENT_BROKER_URL:
-        body_json = json.dumps(body, cls=SimpleEventEncoder)
-        resp = requests.post(EVENT_BROKER_URL, data=body_json, headers=headers)
+        resp = requests.post(EVENT_BROKER_URL, data=body, headers=headers)
         if resp.ok:
             logger.info("Event Id {0} Sent to {1}.  Event broker responded with status code: {2}".format(attributes.get("id"), EVENT_BROKER_URL, resp.status_code))
         else:
