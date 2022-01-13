@@ -63,12 +63,13 @@ def svgconvert(request: Request,
                file: UploadFile = File(...),
                convertType: str = Form(...),
                userId: str = Form(...),
-               id: str = Form(...)):
+               id: str = Form(...), 
+               storyId: str = Form(...)):
     """
     Converts the uploaded file to an svg file.
     """
     try:
-        background_tasks.add_task(conversion_task, file, convertType, metadata={"id": id, "userId": userId})
+        background_tasks.add_task(conversion_task, file, convertType, metadata={"id": id, "userId": userId, "storyId": storyId})
         content = {
             "id": id,
             "status": "processing. Wait for event emitted from {0}".format(EVENT_BROKER_URL)

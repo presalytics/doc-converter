@@ -35,11 +35,15 @@ def emit_event(process_mgr: ProcessMgr):
     }
 
     data = {
-        "resourceId": process_mgr.key,
+        "resourceId": process_mgr.metadata.get("storyId", None) or process_mgr.key,
         "userId": process_mgr.metadata.get("userId", None),
-        "file": base64.b64encode(process_mgr.storage.get_file()).decode("utf-8"),
-        "filename": filename,
-        "MIMEType": mimetypes.MimeTypes().guess_type(filename)[0]
+        "model": {
+            "file": base64.b64encode(process_mgr.storage.get_file()).decode("utf-8"),
+            "filename": filename,
+            "MIMEType": mimetypes.MimeTypes().guess_type(filename)[0],
+            "ooxmlId": process_mgr.metadata.get("id", None) or process_mgr.metadata.get("ooxmlId", None) or process_mgr.key,
+            "storyId": process_mgr.metadata.get("storyId", None)
+        }
     }
 
     event = CloudEvent(attributes, data)

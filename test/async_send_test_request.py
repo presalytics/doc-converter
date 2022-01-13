@@ -9,7 +9,8 @@ r = requests.post('http://localhost:8080/convert', files={
     'file': ('Rectangle.pptx', open(test_file, 'rb'), 'application/vnd.openxmlformats-officedocument.presentationml.presentation'),
     'userId': (None, str(uuid.uuid4())),
     'id': (None, str(uuid.uuid4())),
-    'convertType': (None, 'svg')
+    'convertType': (None, 'svg'),
+    'storyId': (None, str(uuid.uuid4())),
 })
 
 print(r.status_code)
