@@ -4,6 +4,7 @@ import io
 import pathlib
 import uuid
 import typing
+import queue
 from fastapi import (
     FastAPI,
     UploadFile,
@@ -16,6 +17,7 @@ from fastapi import (
 )
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.openapi.utils import get_openapi
+from fastapi_utils.tasks import repeat_every
 from doc_converter import util  # type: ignore
 from doc_converter.processmgr.processmgr import ProcessMgr
 from doc_converter.util import EVENT_BROKER_URL, MAX_JOB_RETRIES
@@ -26,6 +28,22 @@ logger = logging.getLogger(__name__)
 
 
 app = FastAPI(root_path=util.ROOT_PATH)
+
+
+TASK_QUEUE: queue.Queue = queue.Queue()
+
+IS_PROCESSING = False
+
+
+class TaskArgs(object):
+    upload_file: UploadFile
+    convert_type: str
+    metadata: typing.Dict
+
+    def __init__(self, upload_file, convert_type, metadata={}, *args, **kwargs):
+        self.upload_file = upload_file
+        self.convert_type = convert_type
+        self.metadata = metadata
 
 
 @app.get("/")
@@ -57,19 +75,33 @@ def conversion_task(upload_file: UploadFile, convert_type: str, metadata: typing
                 raise ex
 
 
+@app.on_event("startup")
+@repeat_every(seconds=0.2, logger=logger, wait_first=True)
+def conversion_loop():
+    global IS_PROCESSING
+    global TASK_QUEUE
+    if not IS_PROCESSING:
+        next_task: TaskArgs = TASK_QUEUE.get()
+        IS_PROCESSING = True
+        conversion_task(next_task.upload_file, next_task.convert_type, next_task.metadata)
+        IS_PROCESSING = False
+        TASK_QUEUE.task_done()
+
+
 @app.post('/convert')
 def svgconvert(request: Request,
                background_tasks: BackgroundTasks,
                file: UploadFile = File(...),
                convertType: str = Form(...),
                userId: str = Form(...),
-               id: str = Form(...), 
+               id: str = Form(...),
                storyId: str = Form(...)):
     """
     Converts the uploaded file to an svg file.
     """
     try:
-        background_tasks.add_task(conversion_task, file, convertType, metadata={"id": id, "userId": userId, "storyId": storyId})
+        task_args = TaskArgs(file, convertType, metadata={"id": id, "userId": userId, "storyId": storyId})
+        TASK_QUEUE.put(task_args)
         content = {
             "id": id,
             "status": "processing. Wait for event emitted from {0}".format(EVENT_BROKER_URL)

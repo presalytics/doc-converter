@@ -1,5 +1,6 @@
 celery==5.1.2
 fastapi>=0.65.2
+fastapi-utils>=0.2.1
 lxml==4.6.3
 presalytics==0.6.2
 psutil==5.6.3
