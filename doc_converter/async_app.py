@@ -76,7 +76,7 @@ def conversion_task(upload_file: UploadFile, convert_type: str, metadata: typing
 
 
 @app.on_event("startup")
-@repeat_every(seconds=0.2, logger=logger, wait_first=True)
+@repeat_every(seconds=0.1, logger=logger, wait_first=True)
 def conversion_loop():
     global IS_PROCESSING
     global TASK_QUEUE
