@@ -49,9 +49,9 @@ spec:
               name: api
               key: event-broker-url
         - name: DEBUG
-          value: "True"
-        - name: JSON_LOGGER
           value: "False"
+        - name: JSON_LOGGER
+          value: "True"
         ports:
         - containerPort: 80
   
