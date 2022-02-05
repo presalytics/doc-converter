@@ -11,5 +11,9 @@
     "python.testing.unittestEnabled": true,
     "python.linting.flake8Enabled": true,
     "python.linting.mypyEnabled": true,
-    "python.linting.enabled": true
+    "python.linting.enabled": false,
+    "python.autoComplete.extraPaths": [
+        "${workspaceFolder}/doc_converter",
+        "${workspaceFolder}/venv/lib"
+    ]
 }

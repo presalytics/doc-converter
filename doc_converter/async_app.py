@@ -32,6 +32,7 @@ app = FastAPI(root_path=util.ROOT_PATH)
 
 TASK_QUEUE: queue.Queue = queue.Queue()
 
+
 IS_PROCESSING = False
 
 
@@ -80,8 +81,13 @@ def conversion_task(upload_file: UploadFile, convert_type: str, metadata: typing
 def conversion_loop():
     global IS_PROCESSING
     global TASK_QUEUE
-    if not IS_PROCESSING:
+    if not IS_PROCESSING and not TASK_QUEUE.empty():
         next_task: TaskArgs = TASK_QUEUE.get()
+        logger.debug("Conversion task pulled from queue.  id: {0}, convertType: {1}, size: {2}".format(
+            next_task.metadata.get("id", None),
+            next_task.convert_type,
+            next_task.upload_file.file._file.getbuffer().nbytes
+        ))  # type: ignore
         IS_PROCESSING = True
         conversion_task(next_task.upload_file, next_task.convert_type, next_task.metadata)
         IS_PROCESSING = False
@@ -101,6 +107,7 @@ def svgconvert(request: Request,
     """
     try:
         task_args = TaskArgs(file, convertType, metadata={"id": id, "userId": userId, "storyId": storyId})
+        logger.debug("Conversion request received.  id: {0}, convertType: {1}, size: {2}".format(id, convertType, file.file._file.getbuffer().nbytes))  # type: ignore
         TASK_QUEUE.put(task_args)
         content = {
             "id": id,

@@ -51,6 +51,12 @@ def emit_event(process_mgr: ProcessMgr):
     headers, body = to_binary(event, convert_event_data_to_json)
     headers["Content-Type"] = "application/json"  # type: ignore
 
+    logger.debug("Converted file prepped for sending. Id: {0}, convert_type: {1}, size: {2}".format(
+        process_mgr.metadata.get("id", None),
+        process_mgr.convert_type,
+        len(data["model"]["file"])  # type: ignore
+    ))
+
     if EVENT_BROKER_URL:
         resp = requests.post(EVENT_BROKER_URL, data=body, headers=headers)
         if resp.ok:
