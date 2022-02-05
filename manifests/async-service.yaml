@@ -48,6 +48,10 @@ spec:
             configMapKeyRef:
               name: api
               key: event-broker-url
+        - name: DEBUG
+          value: "True"
+        - name: JSON_LOGGER
+          value: "False"
         ports:
         - containerPort: 80
   
